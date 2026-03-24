@@ -6,9 +6,6 @@ import Anthropic from "@anthropic-ai/sdk";
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for Pro plan
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-
 export async function POST(request: NextRequest) {
   try {
     const { pathname, title } = await request.json();
@@ -20,14 +17,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Lazy-init clients (env vars not available at build time)
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
     // Step 1: Download audio from Vercel Blob
     console.log(`🎙️ Downloading: ${pathname}`);
-    const audioUrl = `${process.env.BLOB_READ_WRITE_TOKEN ? "" : ""}`;
 
-    // Fetch the audio file from its blob URL
-    const { blobs } = await (
-      await import("@vercel/blob")
-    ).list({ prefix: pathname });
+    const { list } = await import("@vercel/blob");
+    const { blobs } = await list({ prefix: pathname });
     const blob = blobs.find((b) => b.pathname === pathname);
 
     if (!blob) {
