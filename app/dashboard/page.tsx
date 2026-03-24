@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import Image from "next/image";
+import { signOut } from "next-auth/react";
 
 type Recording = {
   url: string;
@@ -43,7 +43,7 @@ const DownloadIcon = () => (
   </svg>
 );
 
-export default function Home() {
+export default function Dashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState("00:00");
   const [status, setStatus] = useState<{
@@ -161,21 +161,13 @@ export default function Home() {
   return (
     <>
       <div className="container">
-        {/* Header with mountain illustration */}
-        <header className="header">
-          <div style={{ marginBottom: 20, borderRadius: 20, overflow: "hidden" }}>
-            <Image
-              src="/mountains.png"
-              alt="Alpine mountain landscape"
-              width={560}
-              height={280}
-              style={{ width: "100%", height: "auto", display: "block" }}
-              priority
-            />
-          </div>
-          <h1>Muesli</h1>
-          <p className="tagline">Record anything. Get AI-powered notes.</p>
-        </header>
+        {/* Dashboard header */}
+        <div className="dash-header">
+          <span className="dash-brand">Muesli</span>
+          <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-ghost">
+            Sign Out
+          </button>
+        </div>
 
         {/* Recording Card */}
         <div className="card">

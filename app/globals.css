@@ -642,6 +642,116 @@ body {
   color: var(--text-muted);
 }
 
+/* ========================
+   LOGIN PAGE
+   ======================== */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  padding: 0;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.login-illustration {
+  overflow: hidden;
+}
+
+.login-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  margin-top: 28px;
+  letter-spacing: -0.02em;
+}
+
+.login-subtitle {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin-top: 4px;
+  margin-bottom: 24px;
+}
+
+.login-form {
+  padding: 0 32px 32px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.login-error {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 12px;
+}
+
+/* ========================
+   DASHBOARD HEADER
+   ======================== */
+
+.dash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.dash-brand {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.btn-ghost {
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  background: none;
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.btn-ghost:hover {
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  border-color: var(--card-border-hover);
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .hero-title { font-size: 44px; }
@@ -658,6 +768,8 @@ body {
   .header h1 { font-size: 36px; }
   .record-btn { padding: 14px; font-size: 15px; }
   .hero-title { font-size: 36px; }
+  .login-card { border-radius: 16px; }
+  .login-form { padding: 0 24px 24px; }
   .list-item {
     flex-direction: column;
     align-items: flex-start;
@@ -665,4 +777,3 @@ body {
   }
   .btn-sm { margin-left: 0; }
 }
-
