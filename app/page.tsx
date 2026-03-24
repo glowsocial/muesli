@@ -28,6 +28,7 @@ export default function Home() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -35,7 +36,6 @@ export default function Home() {
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  // Load recordings and notes
   const loadData = useCallback(async () => {
     try {
       const [recRes, notesRes] = await Promise.all([
@@ -45,7 +45,7 @@ export default function Home() {
       if (recRes.ok) setRecordings(await recRes.json());
       if (notesRes.ok) setNotes(await notesRes.json());
     } catch {
-      // ignore
+      /* ignore */
     }
   }, []);
 
@@ -55,7 +55,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [loadData]);
 
-  // Timer
   const updateTimer = useCallback(() => {
     if (!startTimeRef.current) return;
     const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
@@ -64,10 +63,8 @@ export default function Home() {
     setTimer(`${mins}:${secs}`);
   }, []);
 
-  // Start recording
   const startRecording = async () => {
     setStatus({ text: "Requesting mic access...", type: "" });
-
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -77,23 +74,18 @@ export default function Home() {
           noiseSuppression: true,
         },
       });
-
       audioStreamRef.current = stream;
       audioChunksRef.current = [];
-
       const recorder = new MediaRecorder(stream, {
         mimeType: "audio/webm;codecs=opus",
       });
-
       recorder.ondataavailable = (e) => {
         if (e.data.size > 0) audioChunksRef.current.push(e.data);
       };
-
       mediaRecorderRef.current = recorder;
       recorder.start(1000);
-
       setIsRecording(true);
-      setStatus({ text: "Recording...", type: "recording" });
+      setStatus({ text: "", type: "recording" });
       startTimeRef.current = Date.now();
       timerIntervalRef.current = setInterval(updateTimer, 1000);
     } catch {
@@ -104,17 +96,14 @@ export default function Home() {
     }
   };
 
-  // Stop recording
   const stopRecording = async () => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
-
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
 
     return new Promise<void>((resolve) => {
       recorder.onstop = async () => {
         audioStreamRef.current?.getTracks().forEach((t) => t.stop());
-
         setStatus({ text: "Uploading audio...", type: "processing" });
 
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
@@ -128,12 +117,8 @@ export default function Home() {
             body: formData,
           });
           const data = await res.json();
-
           if (data.ok) {
-            setStatus({
-              text: `Saved! ${data.filename}`,
-              type: "success",
-            });
+            setStatus({ text: "Recording saved!", type: "success" });
             loadData();
           } else {
             setStatus({
@@ -142,32 +127,20 @@ export default function Home() {
             });
           }
         } catch {
-          setStatus({ text: "Upload failed — connection error", type: "error" });
+          setStatus({ text: "Upload failed", type: "error" });
         }
-
         setIsRecording(false);
         setTimer("00:00");
         startTimeRef.current = null;
         resolve();
       };
-
       recorder.stop();
     });
   };
 
-  // Process recording
-  const processRecording = async (pathname: string) => {
-    const recTitle = pathname
-      .split("/")
-      .pop()
-      ?.replace(/^\d{4}.*?_/, "")
-      .replace(/\.(wav|webm)$/, "")
-      .replace(/-/g, " ");
-
-    setStatus({
-      text: `Processing ${recTitle}...`,
-      type: "processing",
-    });
+  const processRecording = async (pathname: string, recTitle: string) => {
+    setProcessingId(pathname);
+    setStatus({ text: `Processing "${recTitle}"...`, type: "processing" });
 
     try {
       const res = await fetch("/api/process", {
@@ -176,12 +149,8 @@ export default function Home() {
         body: JSON.stringify({ pathname, title: recTitle }),
       });
       const data = await res.json();
-
       if (data.ok) {
-        setStatus({
-          text: "Notes generated!",
-          type: "success",
-        });
+        setStatus({ text: "Notes generated!", type: "success" });
         loadData();
       } else {
         setStatus({
@@ -192,6 +161,7 @@ export default function Home() {
     } catch {
       setStatus({ text: "Connection error", type: "error" });
     }
+    setProcessingId(null);
   };
 
   const formatDate = (dateStr: string) =>
@@ -207,89 +177,133 @@ export default function Home() {
     return kb > 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${kb} KB`;
   };
 
-  const statusColor = {
-    "": "text-[var(--text-muted)]",
-    recording: "text-[var(--danger)] font-medium",
-    processing: "text-[var(--accent)]",
-    success: "text-[var(--success)]",
-    error: "text-[var(--danger-light)]",
-  };
-
   return (
-    <div className="max-w-[640px] mx-auto px-6 py-10">
+    <div className="relative z-10 max-w-[640px] mx-auto px-5 py-12 sm:px-6">
       {/* Header */}
-      <header className="text-center mb-10">
-        <h1 className="text-3xl font-bold bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] bg-clip-text text-transparent">
-          🥣 Muesli
-        </h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">
-          AI meeting notes — click to record
+      <header className="text-center mb-12">
+        <div className="inline-flex items-center gap-2 mb-3">
+          <span className="text-4xl">🥣</span>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+            Muesli
+          </h1>
+        </div>
+        <p className="text-sm text-[var(--text-muted)] tracking-wide">
+          Record anything · Get AI-powered notes
         </p>
       </header>
 
-      {/* Controls */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-8 mb-6">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="What's this recording? e.g. UX Review with Dan"
-          className="w-full px-4 py-3 bg-[var(--bg-input)] border border-[var(--border-hover)] rounded-xl text-[var(--text-primary)] text-base outline-none focus:border-[var(--accent)] transition-colors placeholder:text-[var(--text-dim)] mb-5"
-        />
+      {/* Recording Card */}
+      <div className="glass-card p-8 mb-6">
+        {/* Title Input */}
+        <div className="relative mb-6">
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="What's this recording?"
+            disabled={isRecording}
+            className="focus-ring w-full px-5 py-3.5 bg-[var(--bg-input)] border border-[var(--border)] rounded-2xl text-[var(--text-primary)] text-base outline-none focus:border-[var(--accent)] transition-all duration-200 placeholder:text-[var(--text-dim)] disabled:opacity-50"
+          />
+        </div>
 
-        <button
-          onClick={isRecording ? stopRecording : startRecording}
-          className={`w-full py-4 rounded-xl text-lg font-semibold transition-all cursor-pointer ${
-            isRecording
-              ? "bg-[var(--danger)] text-white animate-pulse-ring hover:bg-[var(--danger-light)]"
-              : "bg-gradient-to-br from-[var(--accent)] to-[var(--accent-secondary)] text-[var(--bg-main)] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(245,158,11,0.3)]"
-          }`}
-        >
-          {isRecording ? "⏹ Stop Recording" : "Start Recording"}
-        </button>
-
+        {/* Recording Visualizer */}
         {isRecording && (
-          <div className="text-3xl font-bold text-center text-[var(--danger)] mt-3 tabular-nums">
-            {timer}
+          <div className="flex flex-col items-center mb-6">
+            <div className="flex items-end justify-center h-8 mb-4">
+              {[...Array(9)].map((_, i) => (
+                <span key={i} className="wave-bar" />
+              ))}
+            </div>
+            <div className="text-4xl font-bold text-[var(--danger)] tabular-nums tracking-tight">
+              {timer}
+            </div>
+            <div className="badge badge-recording mt-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+              Recording
+            </div>
           </div>
         )}
 
+        {/* Record Button */}
+        <button
+          onClick={isRecording ? stopRecording : startRecording}
+          className={`btn-shine w-full py-4 rounded-2xl text-lg font-semibold transition-all duration-300 cursor-pointer ${
+            isRecording
+              ? "bg-[var(--danger)] text-white animate-pulse-ring hover:bg-red-500"
+              : "bg-gradient-to-r from-amber-500 to-orange-500 text-[var(--bg-main)] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(245,158,11,0.3)]"
+          }`}
+        >
+          {isRecording ? "⏹  Stop Recording" : "🎤  Start Recording"}
+        </button>
+
+        {/* Status */}
         {status.text && (
-          <div className={`text-center mt-4 text-sm ${statusColor[status.type]}`}>
+          <div
+            className={`text-center mt-5 text-sm font-medium transition-all duration-300 ${
+              status.type === "error"
+                ? "text-red-400"
+                : status.type === "success"
+                ? "text-emerald-400"
+                : status.type === "processing"
+                ? "text-amber-400"
+                : "text-[var(--text-muted)]"
+            }`}
+          >
+            {status.type === "processing" && (
+              <span className="inline-block w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin mr-2 align-middle" />
+            )}
+            {status.type === "success" && <span className="mr-1">✓</span>}
+            {status.type === "error" && <span className="mr-1">✗</span>}
             {status.text}
           </div>
         )}
       </div>
 
       {/* Recordings */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 mb-6">
-        <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
-          📁 Recordings
-        </h2>
+      <div className="glass-card p-6 mb-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest">
+            Recordings
+          </h2>
+          {recordings.length > 0 && (
+            <span className="text-xs text-[var(--text-dim)] tabular-nums">
+              {recordings.length}
+            </span>
+          )}
+        </div>
+
         {recordings.length === 0 ? (
-          <p className="text-sm text-[var(--text-dim)] text-center py-4">
-            No recordings yet
-          </p>
+          <div className="text-center py-8">
+            <div className="text-3xl mb-2 opacity-40">🎙️</div>
+            <p className="text-sm text-[var(--text-dim)]">
+              Hit record to get started
+            </p>
+          </div>
         ) : (
-          <div className="space-y-0 divide-y divide-[var(--border)]">
+          <div className="space-y-1">
             {recordings.map((r) => (
-              <div
-                key={r.pathname}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <div className="text-sm font-medium text-[var(--text-primary)]">
+              <div key={r.pathname} className="list-item-hover flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">
                     {r.title}
                   </div>
-                  <div className="text-xs text-[var(--text-muted)]">
+                  <div className="text-xs text-[var(--text-muted)] mt-0.5">
                     {formatDate(r.uploadedAt)} · {formatSize(r.size)}
                   </div>
                 </div>
                 <button
-                  onClick={() => processRecording(r.pathname)}
-                  className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--accent-bg)] border border-[var(--accent-border)] text-[var(--accent)] hover:bg-[var(--accent-bg-hover)] transition-colors cursor-pointer whitespace-nowrap"
+                  onClick={() => processRecording(r.pathname, r.title)}
+                  disabled={processingId === r.pathname}
+                  className="ml-3 px-4 py-2 text-xs font-medium rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] text-amber-400 hover:bg-amber-500/15 hover:border-amber-500/40 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-wait"
                 >
-                  Generate Notes
+                  {processingId === r.pathname ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                      Processing
+                    </span>
+                  ) : (
+                    "Generate Notes"
+                  )}
                 </button>
               </div>
             ))}
@@ -298,43 +312,54 @@ export default function Home() {
       </div>
 
       {/* Notes */}
-      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 mb-6">
-        <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-4">
-          📝 Notes
-        </h2>
+      <div className="glass-card p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest">
+            Notes
+          </h2>
+          {notes.length > 0 && (
+            <span className="text-xs text-[var(--text-dim)] tabular-nums">
+              {notes.length}
+            </span>
+          )}
+        </div>
+
         {notes.length === 0 ? (
-          <p className="text-sm text-[var(--text-dim)] text-center py-4">
-            No notes yet
-          </p>
+          <div className="text-center py-8">
+            <div className="text-3xl mb-2 opacity-40">📝</div>
+            <p className="text-sm text-[var(--text-dim)]">
+              Notes will appear here after processing
+            </p>
+          </div>
         ) : (
-          <div className="space-y-0 divide-y divide-[var(--border)]">
+          <div className="space-y-1">
             {notes.map((n) => (
-              <div key={n.pathname} className="py-3">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-medium text-[var(--text-primary)]">
+              <div key={n.pathname} className="list-item-hover flex items-center justify-between">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-[var(--text-primary)] truncate capitalize">
                     {n.title}
                   </div>
-                  <a
-                    href={n.url}
-                    download
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--bg-input)] border border-[var(--border-hover)] text-[var(--text-primary)] hover:bg-[var(--border-hover)] transition-colors cursor-pointer whitespace-nowrap"
-                  >
-                    Download .md
-                  </a>
-                </div>
-                <div className="text-xs text-[var(--text-muted)] mt-1">
-                  {formatDate(n.uploadedAt)}
-                </div>
-                {n.preview && (
-                  <div className="text-xs text-[var(--text-dim)] mt-2 line-clamp-2">
-                    {n.preview}
+                  <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                    {formatDate(n.uploadedAt)}
                   </div>
-                )}
+                </div>
+                <a
+                  href={n.url}
+                  download
+                  className="ml-3 px-4 py-2 text-xs font-medium rounded-xl bg-white/5 border border-[var(--border)] text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all duration-200 cursor-pointer whitespace-nowrap"
+                >
+                  ↓ Download
+                </a>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Footer */}
+      <footer className="text-center mt-10 text-xs text-[var(--text-dim)]">
+        Powered by Whisper + Claude · ~$0.21 per meeting
+      </footer>
     </div>
   );
 }
