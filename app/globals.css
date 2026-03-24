@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+:root {
+  --bg-main: #0f0f13;
+  --bg-card: #18181b;
+  --bg-input: #0f0f13;
+  --border: #27272a;
+  --border-hover: #3f3f46;
+  --text-primary: #e4e4e7;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --text-dim: #52525b;
+  --accent: #f59e0b;
+  --accent-secondary: #f97316;
+  --accent-bg: rgba(245, 158, 11, 0.08);
+  --accent-border: rgba(245, 158, 11, 0.3);
+  --accent-bg-hover: rgba(245, 158, 11, 0.25);
+  --danger: #dc2626;
+  --danger-light: #ef4444;
+  --success: #22c55e;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Pulse animation for recording button */
+@keyframes pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  50% { box-shadow: 0 0 0 12px rgba(220, 38, 38, 0); }
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}
