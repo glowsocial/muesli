@@ -1,17 +1,26 @@
 import { auth } from "@/auth";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   const session = await auth();
 
-  if (!session || !session.accessToken) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
+    const account = await prisma.account.findFirst({
+      where: { userId: session.user.id, provider: "google" }
+    });
+
+    if (!account?.access_token) {
+      return NextResponse.json({ events: [] }); // User hasn't finished connecting Google
+    }
+
     const authClient = new google.auth.OAuth2();
-    authClient.setCredentials({ access_token: session.accessToken });
+    authClient.setCredentials({ access_token: account.access_token });
 
     const calendar = google.calendar({ version: "v3", auth: authClient });
 
@@ -47,7 +56,7 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   const session = await auth();
-  if (!session || !session.accessToken) {
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -59,8 +68,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Missing eventId or notesText" }, { status: 400 });
     }
 
+    const account = await prisma.account.findFirst({
+      where: { userId: session.user.id, provider: "google" }
+    });
+
+    if (!account?.access_token) {
+      return NextResponse.json({ error: "No Google permission to edit calendar" }, { status: 403 });
+    }
+
     const authClient = new google.auth.OAuth2();
-    authClient.setCredentials({ access_token: session.accessToken });
+    authClient.setCredentials({ access_token: account.access_token });
 
     const calendar = google.calendar({ version: "v3", auth: authClient });
 
