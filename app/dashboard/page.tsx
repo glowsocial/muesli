@@ -43,6 +43,15 @@ const DownloadIcon = () => (
   </svg>
 );
 
+type Mode = "meeting" | "voice-memo" | "brain-dump" | "content-draft";
+
+const MODES: { value: Mode; label: string; placeholder: string }[] = [
+  { value: "meeting", label: "Meeting Notes", placeholder: "e.g. UX Review with Dan" },
+  { value: "voice-memo", label: "Voice Memo", placeholder: "e.g. Quick thought on pricing" },
+  { value: "brain-dump", label: "Brain Dump", placeholder: "e.g. Product roadmap ideas" },
+  { value: "content-draft", label: "Content Draft", placeholder: "e.g. LinkedIn post about AI" },
+];
+
 export default function Dashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState("00:00");
@@ -53,6 +62,7 @@ export default function Dashboard() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
+  const [mode, setMode] = useState<Mode>("meeting");
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -141,7 +151,7 @@ export default function Dashboard() {
       const res = await fetch("/api/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ pathname, title: recTitle }),
+        body: JSON.stringify({ pathname, title: recTitle, mode }),
       });
       const data = await res.json();
       if (data.ok) { setStatus({ text: "Notes generated!", type: "success" }); loadData(); }
@@ -171,11 +181,24 @@ export default function Dashboard() {
 
         {/* Recording Card */}
         <div className="card">
+          <div className="mode-selector">
+            {MODES.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => setMode(m.value)}
+                disabled={isRecording}
+                className={`mode-btn ${mode === m.value ? "active" : ""}`}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="What's this recording? e.g. UX Review with Dan"
+            placeholder={MODES.find((m) => m.value === mode)?.placeholder || "Title"}
             disabled={isRecording}
             className="title-input"
           />

@@ -135,6 +135,52 @@ body {
   opacity: 0.4;
 }
 
+/* Mode selector */
+.mode-selector {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.mode-selector::-webkit-scrollbar {
+  display: none;
+}
+
+.mode-btn {
+  padding: 8px 14px;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  cursor: pointer;
+  border: 1px solid var(--card-border);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.mode-btn:hover:not(:disabled) {
+  border-color: var(--card-border-hover);
+  color: var(--text-secondary);
+}
+
+.mode-btn.active {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent-text);
+}
+
+.mode-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Record button */
 .record-btn {
   width: 100%;
