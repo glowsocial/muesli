@@ -1,11 +1,17 @@
 import { list } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 
 export const runtime = "nodejs";
 
 export async function GET() {
   try {
-    const { blobs } = await list({ prefix: "notes/" });
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { blobs } = await list({ prefix: `notes/${session.user.email}/` });
 
     const notes = blobs
       .filter((b) => b.pathname.endsWith(".md"))

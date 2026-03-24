@@ -2,12 +2,18 @@ import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
+import { auth } from "@/auth";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for Pro plan
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    }
+
     const { pathname, title, mode = "meeting" } = await request.json();
 
     if (!pathname) {
@@ -156,7 +162,7 @@ ${transcript}`,
       .slice(0, 50);
     const notesFilename = `${timestamp}_${safeName}.md`;
 
-    const notesBlob = await put(`notes/${notesFilename}`, notesContent, {
+    const notesBlob = await put(`notes/${session.user.email}/${notesFilename}`, notesContent, {
       access: "public",
       addRandomSuffix: false,
       contentType: "text/markdown",
@@ -168,6 +174,7 @@ ${transcript}`,
       ok: true,
       notesFile: notesFilename,
       notesUrl: notesBlob.url,
+      notesText: notesContent,
     });
   } catch (error) {
     console.error("Processing error:", error);

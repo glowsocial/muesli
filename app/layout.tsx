@@ -16,7 +16,6 @@ export const metadata: Metadata = {
   title: "Muesli — AI Meeting Notes",
   description:
     "Record meetings from any device, get AI-powered structured notes.",
-  icons: { icon: "/favicon.ico" },
 };
 
 export default function RootLayout({
@@ -25,8 +24,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${jakarta.variable} ${fraunces.variable}`}>
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${jakarta.variable} ${fraunces.variable}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

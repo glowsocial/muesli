@@ -1,0 +1,39 @@
+specification {
+  element actor {
+    style { shape person }
+  }
+  element system
+  element component
+}
+
+model {
+  actor user "User" {
+    description "A person using Muesli"
+  }
+
+  system muesli "Muesli" {
+    description "The Muesli Web App"
+    
+    component frontend "Next.js"
+    component api "API Routes"
+    component db "Supabase Database"
+  }
+
+  system google "Google API" {
+    component oauth "Google OAuth"
+    component calendar "Google Calendar API"
+  }
+
+  user -> frontend "Interacts with"
+  frontend -> api "API requests"
+  frontend -> oauth "Authenticates via"
+  api -> db "Reads/Writes"
+  api -> calendar "Fetches events"
+}
+
+views {
+  view index {
+    title "Muesli High-Level Architecture"
+    include *
+  }
+}

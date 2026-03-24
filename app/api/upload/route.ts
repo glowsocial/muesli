@@ -1,55 +1,40 @@
-import { put } from "@vercel/blob";
-import { NextRequest, NextResponse } from "next/server";
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
 
-export const runtime = "nodejs";
+export async function POST(request: Request): Promise<NextResponse> {
+  const body = (await request.json()) as HandleUploadBody;
+  const session = await auth();
 
-export async function POST(request: NextRequest) {
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
-    const formData = await request.formData();
-    const audio = formData.get("audio") as File | null;
-    const title = (formData.get("title") as string) || "recording";
+    const jsonResponse = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname: string) => {
+        // Securely map the file directly into the logged-in user's folder!
+        const cleanName = pathname.replace(/^recordings\//, "");
+        const finalPathname = `recordings/${session.user.email}/${cleanName}`;
 
-    if (!audio) {
-      return NextResponse.json(
-        { ok: false, error: "No audio file received" },
-        { status: 400 }
-      );
-    }
-
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, "-")
-      .slice(0, 19);
-    const safeName = title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .slice(0, 50);
-    const filename = `${timestamp}_${safeName}.webm`;
-
-    const blob = await put(`recordings/${filename}`, audio, {
-      access: "public",
-      addRandomSuffix: false,
-      contentType: audio.type || "audio/webm",
-    });
-
-    console.log(
-      `📤 Uploaded: ${filename} (${(audio.size / 1024).toFixed(0)} KB)`
-    );
-
-    return NextResponse.json({
-      ok: true,
-      filename,
-      url: blob.url,
-      pathname: blob.pathname,
-    });
-  } catch (error) {
-    console.error("Upload error:", error);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Upload failed",
+        return {
+          allowedContentTypes: ['audio/webm', 'audio/wav', 'audio/mp4', 'audio/ogg', 'audio/mpeg'],
+          tokenPayload: JSON.stringify({ userId: session.user.id }),
+          pathname: finalPathname, 
+        };
       },
-      { status: 500 }
+      onUploadCompleted: async ({ blob, tokenPayload }) => {
+        console.log('blob upload completed', blob, tokenPayload);
+      },
+    });
+
+    return NextResponse.json(jsonResponse);
+  } catch (error) {
+    return NextResponse.json(
+      { error: (error as Error).message },
+      { status: 400 }, // The webhook will retry 5 times waiting for a 200
     );
   }
 }

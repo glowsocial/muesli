@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { signOut } from "next-auth/react";
+import { upload } from '@vercel/blob/client';
 
 type Recording = {
   url: string;
@@ -9,6 +10,14 @@ type Recording = {
   uploadedAt: string;
   size: number;
   title: string;
+};
+
+type CalendarEvent = {
+  id: string;
+  summary: string;
+  start: string;
+  end: string;
+  htmlLink?: string;
 };
 
 type Note = {
@@ -64,6 +73,8 @@ export default function Dashboard() {
   const [title, setTitle] = useState("");
   const [mode, setMode] = useState<Mode>("meeting");
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -73,12 +84,17 @@ export default function Dashboard() {
 
   const loadData = useCallback(async () => {
     try {
-      const [recRes, notesRes] = await Promise.all([
+      const [recRes, notesRes, calRes] = await Promise.all([
         fetch("/api/recordings"),
         fetch("/api/notes"),
+        fetch("/api/calendar")
       ]);
       if (recRes.ok) setRecordings(await recRes.json());
       if (notesRes.ok) setNotes(await notesRes.json());
+      if (calRes.ok) {
+        const calData = await calRes.json();
+        if (calData.events) setCalendarEvents(calData.events);
+      }
     } catch { /* ignore */ }
   }, []);
 
@@ -124,17 +140,25 @@ export default function Dashboard() {
     return new Promise<void>((resolve) => {
       recorder.onstop = async () => {
         audioStreamRef.current?.getTracks().forEach((t) => t.stop());
-        setStatus({ text: "Uploading audio...", type: "processing" });
+        setStatus({ text: "Uploading securely (no size limit!)...", type: "processing" });
         const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const formData = new FormData();
-        formData.append("audio", blob, "recording.webm");
-        formData.append("title", title || "recording");
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const safeName = (title || "recording").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50);
+        const filename = `${timestamp}_${safeName}.webm`;
+
         try {
-          const res = await fetch("/api/upload", { method: "POST", body: formData });
-          const data = await res.json();
-          if (data.ok) { setStatus({ text: "Recording saved!", type: "success" }); setTitle(""); loadData(); }
-          else { setStatus({ text: data.error || "Upload failed", type: "error" }); }
-        } catch { setStatus({ text: "Upload failed", type: "error" }); }
+          const newBlob = await upload(`recordings/${filename}`, blob, {
+            access: 'public',
+            handleUploadUrl: '/api/upload',
+          });
+
+          setStatus({ text: "Recording saved securely!", type: "success" });
+          setTitle("");
+          loadData();
+        } catch (error) {
+          setStatus({ text: "Upload failed: " + (error as Error).message, type: "error" });
+        }
         setIsRecording(false);
         setTimer("00:00");
         startTimeRef.current = null;
@@ -154,7 +178,26 @@ export default function Dashboard() {
         body: JSON.stringify({ pathname, title: recTitle, mode }),
       });
       const data = await res.json();
-      if (data.ok) { setStatus({ text: "Notes generated!", type: "success" }); loadData(); }
+      if (data.ok) { 
+        setStatus({ text: "Notes generated!", type: "success" }); 
+        
+        // Push notes to calendar if an event was selected
+        if (selectedEventId && data.notesText) {
+          setStatus({ text: "Adding to Google Calendar...", type: "processing" });
+          try {
+            await fetch("/api/calendar", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ eventId: selectedEventId, notesText: data.notesText }),
+            });
+            setStatus({ text: "Notes added to Calendar!", type: "success" });
+          } catch {
+             setStatus({ text: "Generated, but couldn't add to calendar", type: "error" });
+          }
+        }
+        
+        loadData(); 
+      }
       else { setStatus({ text: data.error || "Processing failed", type: "error" }); }
     } catch { setStatus({ text: "Connection error", type: "error" }); }
     setProcessingId(null);
@@ -193,6 +236,49 @@ export default function Dashboard() {
               </button>
             ))}
           </div>
+
+          {calendarEvents.length > 0 && (
+            <div className="calendar-events-wrap" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 8 }}>
+              {calendarEvents.map(event => {
+                const isSelected = selectedEventId === event.id;
+                const date = new Date(event.start);
+                const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                return (
+                  <button
+                    key={event.id}
+                    onClick={() => {
+                      if (isSelected) {
+                        setSelectedEventId(null);
+                        setTitle("");
+                      } else {
+                        setSelectedEventId(event.id);
+                        setTitle(event.summary);
+                        setMode("meeting");
+                      }
+                    }}
+                    className={`calendar-event-btn ${isSelected ? "active" : ""}`}
+                    disabled={isRecording}
+                    style={{
+                      flex: "0 0 auto",
+                      padding: "8px 12px",
+                      borderRadius: 8,
+                      border: isSelected ? "2px solid var(--accent)" : "1px solid var(--border)",
+                      background: isSelected ? "rgba(74, 122, 78, 0.1)" : "var(--bg-card)",
+                      cursor: isRecording ? "not-allowed" : "pointer",
+                      textAlign: "left",
+                      minWidth: 140,
+                      maxWidth: 220,
+                    }}
+                  >
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {event.summary}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{time}</div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <input
             type="text"

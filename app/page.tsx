@@ -3,21 +3,13 @@ import Link from "next/link";
 
 export default function LandingPage() {
   return (
-    <div className="landing">
-      {/* Hero */}
-      <section className="hero">
-        <div className="hero-illustration">
-          <Image
-            src="/mountains.png"
-            alt="Alpine mountain landscape"
-            width={800}
-            height={400}
-            style={{ width: "100%", height: "auto", display: "block" }}
-            priority
-          />
-        </div>
-
-        <div className="hero-content">
+    <div className="landing-wrapper">
+      {/* Full-bleed Hero Background */}
+      <div className="landing-bg"></div>
+      
+      {/* Hero Content */}
+      <section className="hero-fullscreen">
+        <div className="hero-glass-card">
           <h1 className="hero-title">Muesli</h1>
           <p className="hero-subtitle">
             AI meeting notes that feel like a fresh mountain morning.
@@ -34,7 +26,7 @@ export default function LandingPage() {
           </div>
 
           <p className="hero-cost">
-            Pay only for what you use — about $0.21 per meeting.
+            Unlimited AI meeting notes for $4 a month.
           </p>
         </div>
       </section>
@@ -87,9 +79,9 @@ export default function LandingPage() {
             </thead>
             <tbody>
               <tr>
-                <td>30-min meeting cost</td>
-                <td className="highlight">$0.21</td>
-                <td>$19/mo flat</td>
+                <td>Monthly Cost</td>
+                <td className="highlight">$4/mo</td>
+                <td>$19/mo</td>
               </tr>
               <tr>
                 <td>Works on any device</td>
