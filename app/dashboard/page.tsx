@@ -71,6 +71,7 @@ export default function Dashboard() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [title, setTitle] = useState("");
+  const [userEmail, setUserEmail] = useState("");
   const [mode, setMode] = useState<Mode>("meeting");
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
@@ -89,7 +90,11 @@ export default function Dashboard() {
         fetch("/api/notes"),
         fetch("/api/calendar")
       ]);
-      if (recRes.ok) setRecordings(await recRes.json());
+      if (recRes.ok) {
+        const recData = await recRes.json();
+        setRecordings(recData.recordings || []);
+        if (recData.email) setUserEmail(recData.email);
+      }
       if (notesRes.ok) setNotes(await notesRes.json());
       if (calRes.ok) {
         const calData = await calRes.json();
@@ -146,11 +151,14 @@ export default function Dashboard() {
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
         const safeName = (title || "recording").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50);
         const filename = `${timestamp}_${safeName}.webm`;
+        
+        const folder = userEmail ? `recordings/${userEmail}` : `recordings/anonymous`;
 
         try {
-          const newBlob = await upload(`recordings/${filename}`, blob, {
+          const newBlob = await upload(`${folder}/${filename}`, blob, {
             access: 'public',
             handleUploadUrl: '/api/upload',
+            clientPayload: JSON.stringify({ email: userEmail })
           });
 
           setStatus({ text: "Recording saved securely!", type: "success" });

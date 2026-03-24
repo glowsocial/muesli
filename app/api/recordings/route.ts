@@ -35,9 +35,9 @@ export async function GET() {
           new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
       );
 
-    return NextResponse.json(recordings);
+    return NextResponse.json({ recordings, email: session.user.email });
   } catch (error) {
     console.error("List recordings error:", error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json({ recordings: [] }, { status: 200 });
   }
 }

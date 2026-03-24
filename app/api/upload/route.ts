@@ -20,9 +20,17 @@ export async function POST(request: Request): Promise<NextResponse> {
         const finalPathname = `recordings/${session.user.email}/${cleanName}`;
 
         return {
-          allowedContentTypes: ['audio/webm', 'audio/wav', 'audio/mp4', 'audio/ogg', 'audio/mpeg'],
+          allowedContentTypes: [
+            'audio/webm', 
+            'audio/webm;codecs=opus', 
+            'audio/webm; codecs=opus', 
+            'video/webm', 
+            'audio/wav', 
+            'audio/mp4', 
+            'audio/ogg', 
+            'audio/mpeg'
+          ],
           tokenPayload: JSON.stringify({ userId: session.user.id }),
-          pathname: finalPathname, 
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
