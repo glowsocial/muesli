@@ -119,12 +119,10 @@ export default function Home() {
           const data = await res.json();
           if (data.ok) {
             setStatus({ text: "Recording saved!", type: "success" });
+            setTitle("");
             loadData();
           } else {
-            setStatus({
-              text: data.error || "Upload failed",
-              type: "error",
-            });
+            setStatus({ text: data.error || "Upload failed", type: "error" });
           }
         } catch {
           setStatus({ text: "Upload failed", type: "error" });
@@ -141,7 +139,6 @@ export default function Home() {
   const processRecording = async (pathname: string, recTitle: string) => {
     setProcessingId(pathname);
     setStatus({ text: `Processing "${recTitle}"...`, type: "processing" });
-
     try {
       const res = await fetch("/api/process", {
         method: "POST",
@@ -153,10 +150,7 @@ export default function Home() {
         setStatus({ text: "Notes generated!", type: "success" });
         loadData();
       } else {
-        setStatus({
-          text: data.error || "Processing failed",
-          type: "error",
-        });
+        setStatus({ text: data.error || "Processing failed", type: "error" });
       }
     } catch {
       setStatus({ text: "Connection error", type: "error" });
@@ -178,129 +172,92 @@ export default function Home() {
   };
 
   return (
-    <div className="relative z-10 max-w-[640px] mx-auto px-5 py-12 sm:px-6">
+    <div className="container">
       {/* Header */}
-      <header className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 mb-3">
-          <span className="text-4xl">🥣</span>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
-            Muesli
-          </h1>
+      <header className="header">
+        <div className="header-logo">
+          <span className="emoji">🥣</span>
+          <h1>Muesli</h1>
         </div>
-        <p className="text-sm text-[var(--text-muted)] tracking-wide">
-          Record anything · Get AI-powered notes
-        </p>
+        <p>Record anything · Get AI-powered notes</p>
       </header>
 
       {/* Recording Card */}
-      <div className="glass-card p-8 mb-6">
-        {/* Title Input */}
-        <div className="relative mb-6">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="What's this recording?"
-            disabled={isRecording}
-            className="focus-ring w-full px-5 py-3.5 bg-[var(--bg-input)] border border-[var(--border)] rounded-2xl text-[var(--text-primary)] text-base outline-none focus:border-[var(--accent)] transition-all duration-200 placeholder:text-[var(--text-dim)] disabled:opacity-50"
-          />
-        </div>
+      <div className="card">
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="What's this recording? e.g. UX Review with Dan"
+          disabled={isRecording}
+          className="title-input"
+        />
 
-        {/* Recording Visualizer */}
+        {/* Waveform visualizer */}
         {isRecording && (
-          <div className="flex flex-col items-center mb-6">
-            <div className="flex items-end justify-center h-8 mb-4">
+          <div className="recording-viz">
+            <div className="waveform">
               {[...Array(9)].map((_, i) => (
                 <span key={i} className="wave-bar" />
               ))}
             </div>
-            <div className="text-4xl font-bold text-[var(--danger)] tabular-nums tracking-tight">
-              {timer}
-            </div>
-            <div className="badge badge-recording mt-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+            <div className="timer">{timer}</div>
+            <div className="recording-badge">
+              <span className="dot" />
               Recording
             </div>
           </div>
         )}
 
-        {/* Record Button */}
         <button
           onClick={isRecording ? stopRecording : startRecording}
-          className={`btn-shine w-full py-4 rounded-2xl text-lg font-semibold transition-all duration-300 cursor-pointer ${
-            isRecording
-              ? "bg-[var(--danger)] text-white animate-pulse-ring hover:bg-red-500"
-              : "bg-gradient-to-r from-amber-500 to-orange-500 text-[var(--bg-main)] hover:-translate-y-0.5 hover:shadow-[0_12px_32px_rgba(245,158,11,0.3)]"
-          }`}
+          className={`record-btn ${isRecording ? "stop" : "start"}`}
         >
           {isRecording ? "⏹  Stop Recording" : "🎤  Start Recording"}
         </button>
 
-        {/* Status */}
         {status.text && (
-          <div
-            className={`text-center mt-5 text-sm font-medium transition-all duration-300 ${
-              status.type === "error"
-                ? "text-red-400"
-                : status.type === "success"
-                ? "text-emerald-400"
-                : status.type === "processing"
-                ? "text-amber-400"
-                : "text-[var(--text-muted)]"
-            }`}
-          >
-            {status.type === "processing" && (
-              <span className="inline-block w-4 h-4 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin mr-2 align-middle" />
-            )}
-            {status.type === "success" && <span className="mr-1">✓</span>}
-            {status.type === "error" && <span className="mr-1">✗</span>}
+          <div className={`status ${status.type}`}>
+            {status.type === "processing" && <span className="spinner" />}
+            {status.type === "success" && "✓ "}
             {status.text}
           </div>
         )}
       </div>
 
       {/* Recordings */}
-      <div className="glass-card p-6 mb-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest">
-            Recordings
-          </h2>
+      <div className="card compact">
+        <div className="section-header">
+          <span className="section-title">Recordings</span>
           {recordings.length > 0 && (
-            <span className="text-xs text-[var(--text-dim)] tabular-nums">
-              {recordings.length}
-            </span>
+            <span className="section-count">{recordings.length}</span>
           )}
         </div>
 
         {recordings.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-3xl mb-2 opacity-40">🎙️</div>
-            <p className="text-sm text-[var(--text-dim)]">
-              Hit record to get started
-            </p>
+          <div className="empty-state">
+            <div className="icon">🎙️</div>
+            <p>Hit record to get started</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div>
             {recordings.map((r) => (
-              <div key={r.pathname} className="list-item-hover flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-[var(--text-primary)] truncate">
-                    {r.title}
-                  </div>
-                  <div className="text-xs text-[var(--text-muted)] mt-0.5">
+              <div key={r.pathname} className="list-item">
+                <div className="list-item-info">
+                  <div className="list-item-name">{r.title}</div>
+                  <div className="list-item-meta">
                     {formatDate(r.uploadedAt)} · {formatSize(r.size)}
                   </div>
                 </div>
                 <button
                   onClick={() => processRecording(r.pathname, r.title)}
                   disabled={processingId === r.pathname}
-                  className="ml-3 px-4 py-2 text-xs font-medium rounded-xl bg-[var(--accent-bg)] border border-[var(--accent-border)] text-amber-400 hover:bg-amber-500/15 hover:border-amber-500/40 transition-all duration-200 cursor-pointer whitespace-nowrap disabled:opacity-50 disabled:cursor-wait"
+                  className="btn-sm accent"
                 >
                   {processingId === r.pathname ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-3 h-3 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
-                      Processing
-                    </span>
+                    <>
+                      <span className="spinner" /> Processing...
+                    </>
                   ) : (
                     "Generate Notes"
                   )}
@@ -312,42 +269,30 @@ export default function Home() {
       </div>
 
       {/* Notes */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-widest">
-            Notes
-          </h2>
+      <div className="card compact">
+        <div className="section-header">
+          <span className="section-title">Notes</span>
           {notes.length > 0 && (
-            <span className="text-xs text-[var(--text-dim)] tabular-nums">
-              {notes.length}
-            </span>
+            <span className="section-count">{notes.length}</span>
           )}
         </div>
 
         {notes.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-3xl mb-2 opacity-40">📝</div>
-            <p className="text-sm text-[var(--text-dim)]">
-              Notes will appear here after processing
-            </p>
+          <div className="empty-state">
+            <div className="icon">📝</div>
+            <p>Notes will appear here after processing</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div>
             {notes.map((n) => (
-              <div key={n.pathname} className="list-item-hover flex items-center justify-between">
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-[var(--text-primary)] truncate capitalize">
-                    {n.title}
-                  </div>
-                  <div className="text-xs text-[var(--text-muted)] mt-0.5">
+              <div key={n.pathname} className="list-item">
+                <div className="list-item-info">
+                  <div className="list-item-name">{n.title}</div>
+                  <div className="list-item-meta">
                     {formatDate(n.uploadedAt)}
                   </div>
                 </div>
-                <a
-                  href={n.url}
-                  download
-                  className="ml-3 px-4 py-2 text-xs font-medium rounded-xl bg-white/5 border border-[var(--border)] text-[var(--text-secondary)] hover:bg-white/10 hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-all duration-200 cursor-pointer whitespace-nowrap"
-                >
+                <a href={n.url} download className="btn-sm neutral">
                   ↓ Download
                 </a>
               </div>
@@ -356,8 +301,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="text-center mt-10 text-xs text-[var(--text-dim)]">
+      <footer className="footer">
         Powered by Whisper + Claude · ~$0.21 per meeting
       </footer>
     </div>
