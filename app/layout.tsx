@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-body",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-display",
+});
 
 export const metadata: Metadata = {
   title: "Muesli — AI Meeting Notes",
   description:
-    "Record meetings from any device, get AI-powered structured notes. The Granola killer.",
+    "Record meetings from any device, get AI-powered structured notes.",
   icons: { icon: "/favicon.ico" },
 };
 
@@ -18,7 +26,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={`${jakarta.variable} ${fraunces.variable}`}>
+        {children}
+      </body>
     </html>
   );
 }
