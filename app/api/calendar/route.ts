@@ -19,8 +19,14 @@ export async function GET() {
       return NextResponse.json({ events: [] }); // User hasn't finished connecting Google
     }
 
-    const authClient = new google.auth.OAuth2();
-    authClient.setCredentials({ access_token: account.access_token });
+    const authClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+    authClient.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+    });
 
     const calendar = google.calendar({ version: "v3", auth: authClient });
 
@@ -76,8 +82,14 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "No Google permission to edit calendar" }, { status: 403 });
     }
 
-    const authClient = new google.auth.OAuth2();
-    authClient.setCredentials({ access_token: account.access_token });
+    const authClient = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    );
+    authClient.setCredentials({
+      access_token: account.access_token,
+      refresh_token: account.refresh_token,
+    });
 
     const calendar = google.calendar({ version: "v3", auth: authClient });
 
