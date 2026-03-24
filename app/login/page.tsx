@@ -3,7 +3,6 @@
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Image from "next/image";
 import { Suspense } from "react";
 
 function LoginForm() {
@@ -37,16 +36,7 @@ function LoginForm() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <div className="login-illustration">
-          <Image
-            src="/mountains.png"
-            alt="Alpine landscape"
-            width={400}
-            height={200}
-            style={{ width: "100%", height: "auto", display: "block" }}
-            priority
-          />
-        </div>
+
 
         <h1 className="login-title">Welcome back</h1>
         <p className="login-subtitle">Sign in to your Muesli account</p>
