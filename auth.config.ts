@@ -47,11 +47,14 @@ export const authConfig = {
   ],
   callbacks: {
     async jwt({ token, account, user }) {
+      if (user) {
+        token.email = user.email;
+        token.sub = user.id;
+      }
       if (account) {
         token.accessToken = account.access_token;
         token.refreshToken = account.refresh_token;
         token.provider = account.provider;
-        if (user) token.sub = user.id;
       }
       return token;
     },
@@ -62,11 +65,9 @@ export const authConfig = {
       session.refreshToken = token.refreshToken as string;
       // @ts-ignore
       session.provider = token.provider as string;
-      if (session.user && token.sub) {
-        session.user.id = token.sub;
-      } else if (session.user && token.id) {
-        // @ts-ignore
-        session.user.id = token.id as string;
+      if (session.user) {
+        if (token.sub) session.user.id = token.sub;
+        if (token.email) session.user.email = token.email as string;
       }
       return session;
     }
