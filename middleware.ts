@@ -11,7 +11,9 @@ export default auth((req) => {
   // Protected routes — redirect to login if not authenticated
   const isProtected =
     pathname.startsWith("/dashboard") ||
-    (pathname.startsWith("/api/") && !pathname.startsWith("/api/auth"));
+    (pathname.startsWith("/api/") && 
+     !pathname.startsWith("/api/auth") &&
+     !pathname.startsWith("/api/upload"));
 
   if (isProtected && !isLoggedIn) {
     const loginUrl = new URL("/login", req.nextUrl.origin);

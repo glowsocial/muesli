@@ -4,17 +4,17 @@ import { auth } from '@/auth';
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
-  const session = await auth();
-
-  if (!session?.user?.email) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   try {
     const jsonResponse = await handleUpload({
       body,
       request,
       onBeforeGenerateToken: async (pathname: string) => {
+        const session = await auth();
+        if (!session?.user?.email || !session?.user?.id) {
+          throw new Error('Unauthorized');
+        }
+
         // Securely map the file directly into the logged-in user's folder!
         const cleanName = pathname.replace(/^recordings\//, "");
         const finalPathname = `recordings/${session.user.email}/${cleanName}`;
