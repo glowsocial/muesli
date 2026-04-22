@@ -84,28 +84,35 @@ export default function Dashboard() {
   const startTimeRef = useRef<number | null>(null);
 
   const loadData = useCallback(async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     try {
-      const [recRes, notesRes, calRes] = await Promise.all([
-        fetch("/api/recordings"),
-        fetch("/api/notes"),
-        fetch("/api/calendar")
+      const [recResult, notesResult, calResult] = await Promise.allSettled([
+        fetch("/api/recordings", { signal: controller.signal }),
+        fetch("/api/notes", { signal: controller.signal }),
+        fetch("/api/calendar", { signal: controller.signal })
       ]);
-      if (recRes.ok) {
-        const recData = await recRes.json();
+
+      if (recResult.status === "fulfilled" && recResult.value.ok) {
+        const recData = await recResult.value.json();
         setRecordings(recData.recordings || []);
         if (recData.email) setUserEmail(recData.email);
       }
-      if (notesRes.ok) setNotes(await notesRes.json());
-      if (calRes.ok) {
-        const calData = await calRes.json();
+      if (notesResult.status === "fulfilled" && notesResult.value.ok) {
+        setNotes(await notesResult.value.json());
+      }
+      if (calResult.status === "fulfilled" && calResult.value.ok) {
+        const calData = await calResult.value.json();
         if (calData.events) setCalendarEvents(calData.events);
       }
-    } catch { /* ignore */ }
+    } catch { /* timeout or network error — ignore */ }
+    finally { clearTimeout(timeout); }
   }, []);
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 15000);
+    const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
 

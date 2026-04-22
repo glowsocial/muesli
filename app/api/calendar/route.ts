@@ -28,6 +28,11 @@ export async function GET() {
       refresh_token: account.refresh_token,
     });
 
+    // Fail fast if token refresh hangs
+    const tokenTimeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Google auth timeout")), 6000)
+    );
+
     const calendar = google.calendar({ version: "v3", auth: authClient });
 
     // Get today's events from the start of the day to the end of the day
@@ -36,14 +41,17 @@ export async function GET() {
     const endOfDay = new Date();
     endOfDay.setHours(23, 59, 59, 999);
 
-    const response = await calendar.events.list({
-      calendarId: "primary",
-      timeMin: startOfDay.toISOString(),
-      timeMax: endOfDay.toISOString(),
-      maxResults: 20,
-      singleEvents: true,
-      orderBy: "startTime",
-    });
+    const response = await Promise.race([
+      calendar.events.list({
+        calendarId: "primary",
+        timeMin: startOfDay.toISOString(),
+        timeMax: endOfDay.toISOString(),
+        maxResults: 20,
+        singleEvents: true,
+        orderBy: "startTime",
+      }),
+      tokenTimeout,
+    ]);
 
     const events = response.data.items?.map(event => ({
       id: event.id,
@@ -55,8 +63,9 @@ export async function GET() {
 
     return NextResponse.json({ events });
   } catch (error) {
-    console.error("Error fetching calendar events:", error);
-    return NextResponse.json({ error: "Failed to fetch calendar events" }, { status: 500 });
+    console.error("Calendar error (returning empty):", error instanceof Error ? error.message : error);
+    // Return empty events instead of a 500 — don't let calendar issues block the dashboard
+    return NextResponse.json({ events: [] });
   }
 }
 
