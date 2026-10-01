@@ -412,7 +412,7 @@ export default function Dashboard() {
         </div>
 
         <footer className="footer">
-          Powered by Whisper + Claude
+          Powered by OpenAI + Claude
         </footer>
       </div>
     </>

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@/auth";
+import { getNotesText, NOTES_MODEL, TRANSCRIPTION_MODEL } from "@/lib/ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for Pro plan
@@ -44,19 +45,19 @@ export async function POST(request: NextRequest) {
     const audioResponse = await fetch(blob.url);
     const audioBuffer = await audioResponse.arrayBuffer();
 
-    // Step 2: Transcribe with Whisper
-    console.log("Transcribing with Whisper...");
+    // Step 2: Transcribe with the current speech model
+    console.log(`Transcribing with ${TRANSCRIPTION_MODEL}...`);
     const audioFile = new File([audioBuffer], "recording.webm", {
       type: "audio/webm",
     });
 
     const transcription = await openai.audio.transcriptions.create({
-      model: "whisper-1",
+      model: TRANSCRIPTION_MODEL,
       file: audioFile,
-      response_format: "text",
+      response_format: "json",
     });
 
-    const transcript = transcription as unknown as string;
+    const transcript = transcription.text;
 
     if (!transcript || transcript.trim().length < 20) {
       return NextResponse.json({
@@ -135,8 +136,10 @@ Make it publication-ready while preserving the speaker's authentic voice.`,
     const systemPrompt = prompts[mode] || prompts.meeting;
 
     const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: NOTES_MODEL,
       max_tokens: 4096,
+      thinking: { type: "between_tools" },
+      output_config: { effort: "medium" },
       messages: [
         {
           role: "user",
@@ -148,8 +151,7 @@ ${transcript}`,
       ],
     });
 
-    const notesContent =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const notesContent = getNotesText(message);
 
     // Step 4: Save notes to Vercel Blob
     const timestamp = new Date()
