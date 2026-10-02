@@ -10,7 +10,7 @@
   --input-focus: #5a8c5e;
   --text: #2c2418;
   --text-secondary: #5c4e3c;
-  --text-muted: #9c917f;
+  --text-muted: #6f6553;
   --text-dim: #c4bca9;
   --accent: #5a8c5e;
   --accent-light: #7ab87e;
@@ -152,6 +152,7 @@ body {
 
 .mode-btn {
   padding: 8px 14px;
+  min-height: 44px;
   border-radius: 100px;
   font-size: 13px;
   font-weight: 600;
@@ -351,6 +352,7 @@ body {
 }
 
 .section-title {
+  margin: 0;
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 600;
@@ -425,6 +427,7 @@ body {
 /* Small buttons */
 .btn-sm {
   padding: 8px 16px;
+  min-height: 44px;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -850,6 +853,7 @@ body {
 }
 
 .dash-brand {
+  margin: 0;
   font-family: var(--font-display);
   font-size: 24px;
   font-weight: 700;
@@ -859,6 +863,7 @@ body {
 
 .btn-ghost {
   padding: 8px 14px;
+  min-height: 44px;
   border-radius: 10px;
   font-size: 13px;
   font-weight: 600;
@@ -900,4 +905,27 @@ body {
     gap: 10px;
   }
   .btn-sm { margin-left: 0; }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wave-bar,
+  .record-btn.stop,
+  .recording-badge .dot {
+    animation: none;
+  }
+  .wave-bar {
+    height: 14px;
+  }
 }

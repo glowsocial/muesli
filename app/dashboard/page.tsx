@@ -231,7 +231,7 @@ export default function Dashboard() {
       <div className="container">
         {/* Dashboard header */}
         <div className="dash-header">
-          <span className="dash-brand">Muesli</span>
+          <h1 className="dash-brand">Muesli</h1>
           <button onClick={() => signOut({ callbackUrl: "/" })} className="btn-ghost">
             Sign Out
           </button>
@@ -239,12 +239,13 @@ export default function Dashboard() {
 
         {/* Recording Card */}
         <div className="card">
-          <div className="mode-selector">
+          <div className="mode-selector" role="group" aria-label="Recording mode">
             {MODES.map((m) => (
               <button
                 key={m.value}
                 onClick={() => setMode(m.value)}
                 disabled={isRecording}
+                aria-pressed={mode === m.value}
                 className={`mode-btn ${mode === m.value ? "active" : ""}`}
               >
                 {m.label}
@@ -253,7 +254,7 @@ export default function Dashboard() {
           </div>
 
           {calendarEvents.length > 0 && (
-            <div className="calendar-events-wrap" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 8 }}>
+            <div className="calendar-events-wrap" role="group" aria-label="Calendar events" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 8 }}>
               {calendarEvents.map(event => {
                 const isSelected = selectedEventId === event.id;
                 const date = new Date(event.start);
@@ -273,19 +274,20 @@ export default function Dashboard() {
                     }}
                     className={`calendar-event-btn ${isSelected ? "active" : ""}`}
                     disabled={isRecording}
+                    aria-pressed={isSelected}
                     style={{
                       flex: "0 0 auto",
                       padding: "8px 12px",
                       borderRadius: 8,
-                      border: isSelected ? "2px solid var(--accent)" : "1px solid var(--border)",
-                      background: isSelected ? "rgba(74, 122, 78, 0.1)" : "var(--bg-card)",
+                      border: isSelected ? "2px solid var(--accent)" : "1px solid var(--card-border)",
+                      background: isSelected ? "var(--accent-bg)" : "var(--card)",
                       cursor: isRecording ? "not-allowed" : "pointer",
                       textAlign: "left",
                       minWidth: 140,
                       maxWidth: 220,
                     }}
                   >
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-main)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {event.summary}
                     </div>
                     <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{time}</div>
@@ -295,7 +297,9 @@ export default function Dashboard() {
             </div>
           )}
 
+          <label htmlFor="recording-title" className="sr-only">Recording title</label>
           <input
+            id="recording-title"
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -326,18 +330,20 @@ export default function Dashboard() {
             {isRecording ? <><StopIcon /> Stop Recording</> : <><MicIcon /> Start Recording</>}
           </button>
 
-          {status.text && (
-            <div className={`status ${status.type}`}>
-              {status.type === "processing" && <span className="spinner" />}
-              {status.text}
-            </div>
-          )}
+          <div role="status" aria-live="polite">
+            {status.text && (
+              <div className={`status ${status.type}`}>
+                {status.type === "processing" && <span className="spinner" aria-hidden="true" />}
+                {status.text}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Recordings */}
         <div className="card compact">
           <div className="section-header">
-            <span className="section-title">Recordings</span>
+            <h2 className="section-title">Recordings</h2>
             {recordings.length > 0 && (
               <span className="section-count">{recordings.length}</span>
             )}
@@ -366,7 +372,7 @@ export default function Dashboard() {
                     disabled={processingId === r.pathname}
                     className="btn-sm accent"
                   >
-                    {processingId === r.pathname ? <><span className="spinner" /> Processing...</> : "Generate Notes"}
+                    {processingId === r.pathname ? <><span className="spinner" aria-hidden="true" /> Processing...</> : "Generate Notes"}
                   </button>
                 </div>
               ))}
@@ -377,7 +383,7 @@ export default function Dashboard() {
         {/* Notes */}
         <div className="card compact">
           <div className="section-header">
-            <span className="section-title">Notes</span>
+            <h2 className="section-title">Notes</h2>
             {notes.length > 0 && (
               <span className="section-count">{notes.length}</span>
             )}

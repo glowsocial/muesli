@@ -57,7 +57,7 @@ function LoginForm() {
           </button>
         </div>
 
-        <div style={{ textAlign: "center", margin: "16px 0", color: "#888", fontSize: 13 }}>
+        <div style={{ textAlign: "center", margin: "16px 0", color: "var(--text-secondary)", fontSize: 13 }}>
           — or email —
         </div>
 
