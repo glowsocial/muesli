@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Fraunces } from "next/font/google";
+import { Schibsted_Grotesk, Newsreader } from "next/font/google";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
+const body = Schibsted_Grotesk({
   subsets: ["latin"],
   variable: "--font-body",
 });
 
-const fraunces = Fraunces({
+const display = Newsreader({
   subsets: ["latin"],
+  style: ["normal", "italic"],
   variable: "--font-display",
 });
 
 export const metadata: Metadata = {
-  title: "Muesli — AI Meeting Notes",
+  title: "Muesli — AI meeting notes in your browser",
   description:
-    "Record meetings from any device, get AI-powered structured notes.",
+    "Record a meeting from any device and leave with the summary, the decisions, and the next steps. No installs.",
 };
 
 export default function RootLayout({
@@ -25,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${jakarta.variable} ${fraunces.variable}`} suppressHydrationWarning>
+      <body className={`${body.variable} ${display.variable}`} suppressHydrationWarning>
         {children}
       </body>
     </html>

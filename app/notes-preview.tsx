@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ArrowUpRight, Check, Download } from "./icons";
 import s from "./landing.module.css";
 
 const examples = [
@@ -16,12 +17,12 @@ export default function NotesPreview() {
     <div className={s.modePicker} aria-label="Example note modes">{examples.map((item,index)=><button type="button" key={item.mode} aria-pressed={selected===index} className={selected===index?s.selectedMode:""} onClick={()=>setSelected(index)}>{item.mode}</button>)}</div>
     <div className={s.previewPaper}>
       <div className={s.paperMeta}><span>{item.label}</span><span className={s.sampleBadge}>SAMPLE</span></div>
-      <div className={s.viewPicker} aria-label="Example view"><button type="button" aria-pressed={view==="words"} onClick={()=>setView("words")}>The words</button><span aria-hidden="true">→</span><button type="button" aria-pressed={view==="notes"} onClick={()=>setView("notes")}>The clarity</button></div>
+      <div className={s.viewPicker} aria-label="Example view"><button type="button" aria-pressed={view==="words"} onClick={()=>setView("words")}>The words</button><ArrowUpRight size={14} /><button type="button" aria-pressed={view==="notes"} onClick={()=>setView("notes")}>The clarity</button></div>
       <div aria-live="polite" aria-atomic="true" className={s.paperContent}>
         <h3>{item.title}</h3>
-        {view === "notes" ? <><div className={s.paperRule}/><h4>Summary</h4><p>{item.summary}</p><h4>{item.heading}</h4><ul>{item.items.map(text=><li key={text}>{text}</li>)}</ul><div className={s.paperTask}><span aria-hidden="true">□</span>{item.task}</div></> : <><div className={s.paperRule}/><h4>Before the notes</h4><p className={s.rawWords}>“{item.input}”</p><p className={s.rawHint}>A thought doesn’t need to arrive neatly packaged.</p></>}
+        {view === "notes" ? <><div className={s.paperRule}/><h4>Summary</h4><p>{item.summary}</p><h4>{item.heading}</h4><ul>{item.items.map(text=><li key={text}>{text}</li>)}</ul><div className={s.paperTask}><span className={s.taskBox}><Check size={12} /></span>{item.task}</div></> : <><div className={s.paperRule}/><h4>Before the notes</h4><p className={s.rawWords}>“{item.input}”</p><p className={s.rawHint}>A thought doesn’t need to arrive neatly packaged.</p></>}
       </div>
-      <div className={s.paperBottom}><span>Made clearer with Muesli</span><span aria-hidden="true">↙ .md</span></div>
+      <div className={s.paperBottom}><span>Made with Muesli</span><span><Download size={14} /> notes.md</span></div>
     </div>
     <p className={s.previewCaption}>A sample, not a live recording. Try a mode. Compare the words and the notes.</p>
   </div>;

@@ -1,29 +1,29 @@
 :root {
-  --bg: #f7f5f0;
-  --card: #ffffff;
-  --card-border: #e2ddd3;
-  --card-border-hover: #cfc8ba;
-  --card-shadow: 0 1px 3px rgba(87, 75, 58, 0.06), 0 4px 14px rgba(87, 75, 58, 0.04);
-  --card-shadow-hover: 0 2px 8px rgba(87, 75, 58, 0.08), 0 8px 28px rgba(87, 75, 58, 0.06);
-  --input-bg: #f0ece4;
-  --input-border: #ddd7cb;
-  --input-focus: #5a8c5e;
-  --text: #2c2418;
-  --text-secondary: #5c4e3c;
-  --text-muted: #6f6553;
-  --text-dim: #c4bca9;
-  --accent: #5a8c5e;
-  --accent-light: #7ab87e;
-  --accent-bg: #eef5ee;
-  --accent-bg-hover: #dceedd;
-  --accent-border: #b3d4b5;
-  --accent-text: #2d5a30;
-  --danger: #c44536;
-  --danger-bg: #fdf0ee;
-  --danger-border: #f0c5be;
-  --success: #4a8c4e;
-  --font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: "Fraunces", Georgia, serif;
+  --bg: #f6f1e7;
+  --card: #fffdf8;
+  --card-border: #e6e1d6;
+  --card-border-hover: #d9d3c6;
+  --card-shadow: 0 1px 3px rgba(28, 43, 54, 0.05), 0 4px 14px rgba(28, 43, 54, 0.04);
+  --card-shadow-hover: 0 2px 8px rgba(28, 43, 54, 0.07), 0 8px 28px rgba(28, 43, 54, 0.06);
+  --input-bg: #efe9dd;
+  --input-border: #d9d3c6;
+  --input-focus: #8e3b57;
+  --text: #1c2b36;
+  --text-secondary: #3f4d58;
+  --text-muted: #5c6873;
+  --text-dim: #9aa5ad;
+  --accent: #8e3b57;
+  --accent-light: #ad5a76;
+  --accent-bg: #f3e4e9;
+  --accent-bg-hover: #ead2db;
+  --accent-border: #d8a9bb;
+  --accent-text: #6e2a43;
+  --danger: #b9382b;
+  --danger-bg: #fbeeec;
+  --danger-border: #efc3bd;
+  --success: #3f7a4a;
+  --font-body: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: "Newsreader", Georgia, serif;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -128,7 +128,7 @@ body {
 
 .title-input:focus {
   border-color: var(--input-focus);
-  box-shadow: 0 0 0 3px rgba(90, 140, 94, 0.12);
+  box-shadow: 0 0 0 3px rgba(142, 59, 87, 0.12);
 }
 
 .title-input:disabled {
@@ -200,15 +200,15 @@ body {
 }
 
 .record-btn.start {
-  background: linear-gradient(135deg, #5a8c5e, #4a7a4e);
+  background: var(--accent);
   color: white;
-  box-shadow: 0 4px 16px rgba(90, 140, 94, 0.25);
+  box-shadow: 0 4px 16px rgba(142, 59, 87, 0.25);
 }
 
 .record-btn.start:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(90, 140, 94, 0.35);
-  background: linear-gradient(135deg, #6a9c6e, #5a8a5e);
+  box-shadow: 0 8px 28px rgba(142, 59, 87, 0.35);
+  background: var(--accent-light);
 }
 
 .record-btn.start:active {
@@ -222,7 +222,7 @@ body {
 }
 
 .record-btn.stop:hover {
-  background: #d45242;
+  background: #a32f23;
 }
 
 /* Icon inside button */
@@ -333,7 +333,7 @@ body {
   display: inline-block;
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(90, 140, 94, 0.2);
+  border: 2px solid rgba(142, 59, 87, 0.2);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -466,7 +466,7 @@ body {
 }
 
 .btn-sm.neutral:hover {
-  background: #e6e0d4;
+  background: var(--input-bg);
   color: var(--text);
   border-color: var(--card-border-hover);
 }
@@ -485,25 +485,6 @@ body {
 
 .landing-wrapper {
   padding-bottom: 60px;
-}
-
-.landing-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  background-image: url('/muesli-hero.jpg');
-  background-size: cover;
-  background-position: center;
-  z-index: -1;
-}
-
-.landing-bg::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.2);
 }
 
 .hero-fullscreen {
@@ -531,7 +512,7 @@ body {
   font-family: var(--font-display);
   font-size: 64px;
   font-weight: 800;
-  color: #2c3a30;
+  color: var(--text);
   letter-spacing: -0.03em;
   line-height: 1;
   margin-bottom: 12px;
@@ -541,7 +522,7 @@ body {
   font-family: var(--font-display);
   font-size: 22px;
   font-weight: 500;
-  color: #4a5c4e;
+  color: var(--text-secondary);
   line-height: 1.4;
   margin-bottom: 16px;
   font-style: italic;
@@ -549,7 +530,7 @@ body {
 
 .hero-description {
   font-size: 16px;
-  color: #5c6e60;
+  color: var(--text-muted);
   line-height: 1.6;
   margin: 0 auto 32px;
 }
@@ -561,26 +542,28 @@ body {
 .btn-primary {
   display: inline-block;
   padding: 16px 40px;
-  background: linear-gradient(135deg, #5a8c5e, #4a7a4e);
+  border: 0;
+  cursor: pointer;
+  background: var(--accent);
   color: white;
   font-family: var(--font-body);
   font-size: 16px;
   font-weight: 700;
   border-radius: 16px;
   text-decoration: none;
-  box-shadow: 0 4px 16px rgba(90, 140, 94, 0.25);
+  box-shadow: 0 4px 16px rgba(142, 59, 87, 0.25);
   transition: all 0.25s ease;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(90, 140, 94, 0.35);
-  background: linear-gradient(135deg, #6a9c6e, #5a8a5e);
+  box-shadow: 0 8px 28px rgba(142, 59, 87, 0.35);
+  background: var(--accent-light);
 }
 
 .hero-cost {
   font-size: 13px;
-  color: #7b8e7e;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -731,31 +714,17 @@ body {
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background-image: url('/muesli-hero.jpg');
-  background-size: cover;
-  background-position: center;
-  position: relative;
-  z-index: 1;
-}
-
-.login-page::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.25);
-  z-index: -1;
+  background: var(--bg);
 }
 
 .login-card {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 32px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
   padding: 40px 0 12px 0;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  box-shadow: var(--card-shadow-hover);
   overflow: hidden;
 }
 
