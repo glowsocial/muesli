@@ -43,7 +43,8 @@ export default function LandingPage() {
           </div>
         </section>
         <div className={s.ribbon}><span>A good place for</span><span>Meetings</span><i /><span>Voice memos</span><i /><span>Brain dumps</span><i /><span>Content drafts</span></div>
-        <section id="preview" className={s.previewSection} aria-labelledby="preview-title">
+        <section id="film" className={s.film} aria-labelledby="film-title"><div className={s.sectionHeading}><h2 id="film-title">See it in<br /><em>fifty seconds.</em></h2><p>Press record, stop, and leave with your notes.</p></div><div className={s.filmFrame}><video controls playsInline preload="none" poster="/muesli-film-poster.jpg" aria-label="A 50-second film of Muesli: record a meeting, generate the notes, and download them."><source src="/muesli-film.mp4" type="video/mp4" /></video></div></section>
+        <section id="preview"className={s.previewSection} aria-labelledby="preview-title">
           <div className={s.previewCopy}><h2 id="preview-title">A little messy in.<br /><em>A lot clearer out.</em></h2><p>The meeting that went everywhere. The idea on your morning walk. The thought you just need to say out loud.</p><p>Choose a mode. See how Muesli gives your words a useful shape.</p><div className={s.exportNote}><Download size={22} className={s.exportIcon} /><div><strong>Good notes travel.</strong><p>Download Markdown files. Take them to Obsidian or wherever your ideas live.</p></div></div></div>
           <NotesPreview />
         </section>
