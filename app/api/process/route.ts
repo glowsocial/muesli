@@ -1,7 +1,6 @@
 import { put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@/auth";
 import { getNotesText, NOTES_MODEL, TRANSCRIPTION_MODEL } from "@/lib/ai";
 
@@ -24,9 +23,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Lazy-init clients (env vars not available at build time)
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) {
+      return NextResponse.json(
+        { ok: false, error: "Add your OpenAI API key (OPENAI_API_KEY) to generate notes." },
+        { status: 500 }
+      );
+    }
+
+    // Lazy-init client (env vars not available at build time)
+    const openai = new OpenAI({ apiKey });
 
     // Step 1: Download audio from Vercel Blob
     console.log(`Downloading: ${pathname}`);
@@ -71,7 +77,7 @@ export async function POST(request: NextRequest) {
       `Transcript: ${transcript.length} chars`
     );
 
-    // Step 3: Generate notes with Claude — prompt depends on mode
+    // Step 3: Generate notes with OpenAI — prompt depends on mode
     console.log(`Generating notes (mode: ${mode})...`);
     const meetingDate = new Date().toISOString().split("T")[0];
 
@@ -135,23 +141,17 @@ Make it publication-ready while preserving the speaker's authentic voice.`,
 
     const systemPrompt = prompts[mode] || prompts.meeting;
 
-    const message = await anthropic.messages.create({
+    // The notes model reasons before it writes, and reasoning spends output
+    // tokens. 16384 leaves well over 4096 for the notes at low effort.
+    const response = await openai.responses.create({
       model: NOTES_MODEL,
-      max_tokens: 4096,
-      thinking: { type: "between_tools" },
-      output_config: { effort: "medium" },
-      messages: [
-        {
-          role: "user",
-          content: `${systemPrompt}
-
-TRANSCRIPT:
-${transcript}`,
-        },
-      ],
+      instructions: systemPrompt,
+      input: `TRANSCRIPT:\n${transcript}`,
+      max_output_tokens: 16384,
+      reasoning: { effort: "low" },
     });
 
-    const notesContent = getNotesText(message);
+    const notesContent = getNotesText(response);
 
     // Step 4: Save notes to Vercel Blob
     const timestamp = new Date()

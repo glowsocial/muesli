@@ -418,7 +418,7 @@ export default function Dashboard() {
         </div>
 
         <footer className="footer">
-          Powered by OpenAI + Claude
+          Powered by OpenAI
         </footer>
       </div>
     </>

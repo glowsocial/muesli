@@ -1,129 +1,94 @@
-# 🥣 Muesli — AI Meeting Notes
+# Muesli
 
-Record meetings from any device, get AI-powered structured notes. Built with the Swiss Alps in mind.
+Muesli records meetings in your browser and turns them into clean, structured notes.
+You run your own copy, with your own OpenAI key, so your recordings stay in your own storage.
 
-**Stack**: Next.js · Vercel · Vercel Blob · OpenAI Whisper · Claude  
-**Domain**: [mueslirecorder.com](https://mueslirecorder.com)
+## How it works
 
----
+1. Open the app on any device and sign in.
+2. Pick a mode (Meeting Notes, Voice Memo, Brain Dump or Content Draft) and give the recording a title.
+3. Press **Start Recording**. Your browser records the microphone, with nothing to install.
+4. Press **Stop Recording**. The audio uploads to your Vercel Blob storage.
+5. Press **Generate Notes**. OpenAI transcribes the audio, then OpenAI writes the notes.
+6. Download the notes as a Markdown (`.md`) file, ready for Obsidian or any notes app.
 
-## How It Works
+## What you need
 
-1. Open the app on any device (phone, laptop, tablet)
-2. Name your recording, hit **Start Recording**
-3. Your browser captures mic audio (no installs needed)
-4. Hit **Stop** → audio uploads to Vercel Blob storage
-5. Click **Generate Notes** → Whisper transcribes → Claude generates structured markdown notes
-6. Download your notes as `.md` files (Obsidian-compatible)
+- An OpenAI API key, from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+- A free Vercel account, from [vercel.com](https://vercel.com).
+
+That is all.
 
 ## Setup
 
-### 1. Clone & Install
+1. Copy this repository to your own GitHub account (fork it, or clone it and push it).
+2. In Vercel, go to [vercel.com/new](https://vercel.com/new) and import your copy.
+3. In your Vercel project, open the **Storage** tab, choose **Create**, then **Blob**, and connect it to the project.
+   This sets `BLOB_READ_WRITE_TOKEN` for you.
+4. In **Settings**, then **Environment Variables**, add these four:
+   - `OPENAI_API_KEY`: your OpenAI key.
+   - `AUTH_SECRET`: a long random string. Run `npx auth secret` to make one.
+   - `AUTH_EMAIL`: the email you will sign in with.
+   - `AUTH_PASSWORD`: the password you will sign in with.
+5. Redeploy, so the new variables take effect.
+6. Open your app's address and sign in with the email and password you chose.
+
+The full list of variables, with a note on each, is in `.env.example`.
+
+## Run it on your own computer
+
+You need [Node.js](https://nodejs.org) installed.
 
 ```bash
-git clone https://github.com/glowsocial/muesli.git
+git clone <your copy's URL>
 cd muesli
 npm install
-```
-
-### 2. Environment Variables
-
-Copy `.env.example` to `.env.local`:
-
-```bash
 cp .env.example .env.local
 ```
 
-Fill in:
-
-| Variable | Where to get it |
-|----------|----------------|
-| `OPENAI_API_KEY` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com/) |
-| `BLOB_READ_WRITE_TOKEN` | Auto-set when you add Blob storage in Vercel (see below) |
-
-### 3. Deploy to Vercel
-
-1. Push to GitHub (already done: `glowsocial/muesli`)
-2. Go to [vercel.com/new](https://vercel.com/new) → Import `glowsocial/muesli`
-3. Add environment variables (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`)
-4. Deploy
-
-### 4. Add Blob Storage
-
-1. In Vercel dashboard → your Muesli project → **Storage** tab
-2. Click **Create** → **Blob**
-3. Connect it to your project
-4. This auto-sets `BLOB_READ_WRITE_TOKEN` — no manual config needed
-
-### 5. Connect Domain
-
-In Vercel → **Settings** → **Domains** → add `mueslirecorder.com`
-
-Then in **Namecheap** (or your DNS provider):
-
-| Type | Host | Value |
-|------|------|-------|
-| A | `@` | `76.76.21.21` |
-| CNAME | `www` | `cname.vercel-dns.com` |
-
-### 6. Add Auth (TODO)
-
-Auth is not yet implemented. The plan is to use **NextAuth.js** with email magic links:
-
-1. `npm install next-auth`
-2. Create `/app/api/auth/[...nextauth]/route.ts`
-3. Configure a provider (email magic link via Resend, or Google OAuth)
-4. Add `NEXTAUTH_SECRET` and `NEXTAUTH_URL` env vars
-5. Wrap pages with session checks
-6. Protect API routes with `getServerSession()`
-
-This will be added before the trip. For now, the app is unprotected — don't share the URL publicly until auth is in place.
-
-## Local Development
+Fill in `.env.local` with the same values as above.
+For `BLOB_READ_WRITE_TOKEN`, copy the value from your Vercel project's environment variables.
+Then start the app:
 
 ```bash
 npm run dev
 ```
 
-Opens at [http://localhost:3000](http://localhost:3000).
+It opens at [http://localhost:3000](http://localhost:3000).
 
-Note: Blob storage requires the `BLOB_READ_WRITE_TOKEN` env var, which is auto-injected in Vercel. For local dev, you can grab the token from your Vercel project's environment variables and add it to `.env.local`.
+## Optional: Google sign-in and calendar
 
-## Cost Per Meeting
+With Google turned on, you can sign in with Google, see today's calendar events, and add notes to an event.
+It needs a Postgres database as well.
 
-| Service | Cost |
-|---------|------|
-| Whisper transcription | ~$0.006/minute |
-| Claude note generation | ~$0.03/session |
-| **30-min meeting** | **~$0.21** |
-| Vercel hosting | Free tier |
-| Blob storage | Free tier (100MB) |
+1. In the [Google Cloud console](https://console.cloud.google.com/apis/credentials), create an OAuth client of the type "Web application".
+2. Add `https://<your-app-address>/api/auth/callback/google` as an authorized redirect URI.
+3. Turn on the Google Calendar API for the same Google Cloud project.
+4. Create a Postgres database (Vercel's Storage tab can add one), and copy its connection string.
+5. Set `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `DATABASE_URL`. Set all three, or none.
+6. Create the database tables once, from your computer, with `DATABASE_URL` set in `.env.local`:
 
-## Project Structure
-
-```
-app/
-├── page.tsx                  # Main recording UI
-├── globals.css               # Swiss Alps design system
-├── layout.tsx                # Root layout
-└── api/
-    ├── upload/route.ts       # Receive & store audio
-    ├── recordings/route.ts   # List recordings
-    ├── notes/route.ts        # List notes
-    └── process/route.ts      # Whisper → Claude pipeline
+```bash
+npx prisma db push
 ```
 
-## Roadmap
+When the Google variables are not set, the app shows only the email and password sign-in and uses no database.
 
-- [x] Browser-based mic recording
-- [x] Whisper transcription
-- [x] Claude note generation
-- [x] Vercel Blob storage
-- [x] Swiss Alps design
-- [ ] Auth (NextAuth.js magic links)
-- [ ] Notes viewer (render markdown in-app)
-- [ ] Recording history with search
-- [ ] Mobile-optimized recording UX
-- [ ] Chrome extension (tab audio capture for Meet/Zoom)
-- [ ] Google Calendar integration
+## Good to know
+
+- Recordings and notes are stored in your own Vercel Blob store with public, unlisted links.
+  Anyone who has a file's link can open it, so share links with care.
+- Each copy of the app has one login: the email and password you set.
+- The notes model is set in `lib/ai.ts`. To use a different OpenAI model, set `OPENAI_NOTES_MODEL`.
+
+## Cost
+
+You pay OpenAI for your own usage, and nothing to anyone else.
+Transcription uses `gpt-transcribe`, listed at $0.0045 per minute of audio on the [OpenAI pricing page](https://developers.openai.com/api/docs/pricing) (checked October 5, 2026).
+Writing the notes is billed per token at the price of the notes model you use; see the same page.
+Vercel's free plan and its Blob storage are enough for personal use.
+Check [Vercel's pricing page](https://vercel.com/pricing) for the current limits.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

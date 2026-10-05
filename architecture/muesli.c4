@@ -13,22 +13,38 @@ model {
 
   system muesli "Muesli" {
     description "The Muesli Web App"
-    
+
     component frontend "Next.js"
     component api "API Routes"
-    component db "Supabase Database"
+    component db "Postgres Database (optional)" {
+      description "Used only when Google sign-in is turned on"
+    }
   }
 
-  system google "Google API" {
+  system blob "Vercel Blob" {
+    description "Stores recordings and notes"
+  }
+
+  system openai "OpenAI API" {
+    component transcription "Transcription"
+    component notes "Notes model"
+  }
+
+  system google "Google API (optional)" {
+    description "Used only when GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set"
     component oauth "Google OAuth"
     component calendar "Google Calendar API"
   }
 
   user -> frontend "Interacts with"
   frontend -> api "API requests"
-  frontend -> oauth "Authenticates via"
-  api -> db "Reads/Writes"
-  api -> calendar "Fetches events"
+  frontend -> blob "Uploads recordings"
+  frontend -> oauth "Authenticates via (optional)"
+  api -> blob "Reads recordings, writes notes"
+  api -> transcription "Transcribes audio"
+  api -> notes "Writes notes"
+  api -> db "Reads/Writes (optional)"
+  api -> calendar "Fetches events (optional)"
 }
 
 views {

@@ -2,12 +2,17 @@ import { auth } from "@/auth";
 import { google } from "googleapis";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { isGoogleEnabled } from "@/lib/config";
 
 export async function GET() {
   const session = await auth();
 
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isGoogleEnabled()) {
+    return NextResponse.json({ events: [] });
   }
 
   try {
@@ -73,6 +78,10 @@ export async function PATCH(req: Request) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isGoogleEnabled()) {
+    return NextResponse.json({ error: "Google Calendar is not connected" }, { status: 403 });
   }
 
   try {

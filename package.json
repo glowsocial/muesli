@@ -2,15 +2,16 @@
   "name": "muesli",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --experimental-strip-types --test \"tests/*.test.mjs\"",
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.131.0",
     "@auth/prisma-adapter": "^2.11.1",
     "@types/gapi.calendar": "^3.0.11",
     "@vercel/blob": "^2.3.1",

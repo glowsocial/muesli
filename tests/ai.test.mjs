@@ -2,26 +2,34 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { getNotesText } from "../lib/ai.ts";
 
-test("reads notes after thinking blocks and keeps all text blocks", () => {
+test("returns the trimmed notes from a completed response", () => {
   const notes = getNotesText({
-    stop_reason: "end_turn",
-    content: [
-      { type: "thinking", thinking: "", signature: "sample" },
-      { type: "text", text: "# Meeting notes", citations: null },
-      { type: "text", text: "- [ ] Alex: Share draft Friday", citations: null },
-    ],
+    status: "completed",
+    incomplete_details: null,
+    output_text: "\n# Meeting notes\n\n- [ ] Alex: Share draft Friday\n  ",
   });
   assert.equal(notes, "# Meeting notes\n\n- [ ] Alex: Share draft Friday");
 });
 
-test("does not save refusal, truncated, or oversized-context responses", () => {
-  for (const stop_reason of ["refusal", "max_tokens", "model_context_window_exceeded"]) {
-    assert.throws(() => getNotesText({ stop_reason, content: [{ type: "text", text: "Incomplete notes", citations: null }] }), /No .*notes were saved/);
+test("does not save declined, truncated, or unfinished responses", () => {
+  const cases = [
+    { status: "incomplete", incomplete_details: { reason: "content_filter" } },
+    { status: "incomplete", incomplete_details: { reason: "max_output_tokens" } },
+    { status: "failed", incomplete_details: null },
+    { status: "in_progress", incomplete_details: null },
+    { incomplete_details: null },
+  ];
+  for (const response of cases) {
+    assert.throws(() => getNotesText({ ...response, output_text: "Incomplete notes" }), /No .*notes were saved/);
   }
+  assert.throws(
+    () => getNotesText({ status: "incomplete", incomplete_details: { reason: "content_filter" }, output_text: "x" }),
+    /declined this recording/,
+  );
 });
 
-test("does not save empty notes or a thinking-only response", () => {
-  for (const content of [[], [{ type: "text", text: "  ", citations: null }], [{ type: "thinking", thinking: "", signature: "sample" }]]) {
-    assert.throws(() => getNotesText({ stop_reason: "end_turn", content }), /returned no notes/);
+test("does not save empty or whitespace notes", () => {
+  for (const output_text of ["", "   \n\t "]) {
+    assert.throws(() => getNotesText({ status: "completed", incomplete_details: null, output_text }), /returned no notes/);
   }
 });

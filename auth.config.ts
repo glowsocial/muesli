@@ -1,10 +1,25 @@
-import type { NextAuthConfig } from "next-auth";
+import type { DefaultSession, NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
+import { isGoogleEnabled } from "./lib/config";
+
+// The session fields the callbacks below write. Type-only, so this file stays
+// edge-safe for middleware.ts.
+declare module "next-auth" {
+  interface Session {
+    accessToken?: string;
+    refreshToken?: string;
+    provider?: string;
+    user: {
+      id: string;
+    } & DefaultSession["user"]
+  }
+}
 
 export const authConfig = {
   providers: [
-    Google({
+    // Google sign-in is registered only when both Google vars are set.
+    ...(isGoogleEnabled() ? [Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       authorization: {
@@ -15,7 +30,7 @@ export const authConfig = {
           scope: "openid email profile https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/calendar.events"
         }
       }
-    }),
+    })] : []),
     Credentials({
       name: "Muesli Local",
       credentials: {
@@ -59,11 +74,8 @@ export const authConfig = {
       return token;
     },
     async session({ session, token }) {
-      // @ts-ignore
       session.accessToken = token.accessToken as string;
-      // @ts-ignore
       session.refreshToken = token.refreshToken as string;
-      // @ts-ignore
       session.provider = token.provider as string;
       if (session.user) {
         if (token.sub) session.user.id = token.sub;
