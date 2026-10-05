@@ -23,11 +23,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    // The deployment's own key wins. With none set, each person sends their own
+    // key with the request. It is used for this request only and never stored or logged.
+    const apiKey =
+      process.env.OPENAI_API_KEY?.trim() || request.headers.get("x-openai-key")?.trim();
     if (!apiKey) {
       return NextResponse.json(
-        { ok: false, error: "Add your OpenAI API key (OPENAI_API_KEY) to generate notes." },
-        { status: 500 }
+        { ok: false, error: "Add your OpenAI API key to generate notes." },
+        { status: 400 }
       );
     }
 
@@ -179,6 +182,18 @@ Make it publication-ready while preserving the speaker's authentic voice.`,
     });
   } catch (error) {
     console.error("Processing error:", error);
+    if (error instanceof OpenAI.APIError && error.status === 401) {
+      return NextResponse.json(
+        { ok: false, error: "OpenAI did not accept that API key. Check the key and try again." },
+        { status: 400 }
+      );
+    }
+    if (error instanceof OpenAI.APIError && error.status === 429 && /credit|quota/.test(String(error.code))) {
+      return NextResponse.json(
+        { ok: false, error: "Your OpenAI account has no credits. Add credits at platform.openai.com, then try again." },
+        { status: 400 }
+      );
+    }
     return NextResponse.json(
       {
         ok: false,

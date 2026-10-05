@@ -28,3 +28,11 @@ test("Google is off when both vars are undefined", () => {
   assert.equal(isGoogleEnabled({}), false);
   assert.equal(isGoogleEnabled({ GOOGLE_CLIENT_ID: undefined, GOOGLE_CLIENT_SECRET: undefined }), false);
 });
+
+test("the server key counts only when it is non-blank", async () => {
+  const { hasServerOpenAIKey } = await import("../lib/config.ts");
+  assert.equal(hasServerOpenAIKey({ OPENAI_API_KEY: "sk-test" }), true);
+  assert.equal(hasServerOpenAIKey({ OPENAI_API_KEY: "" }), false);
+  assert.equal(hasServerOpenAIKey({ OPENAI_API_KEY: "  " }), false);
+  assert.equal(hasServerOpenAIKey({}), false);
+});

@@ -61,6 +61,8 @@ const MODES: { value: Mode; label: string; placeholder: string }[] = [
   { value: "content-draft", label: "Content Draft", placeholder: "e.g. LinkedIn post about AI" },
 ];
 
+const OPENAI_KEY_STORAGE = "muesli-openai-key";
+
 export default function Dashboard() {
   const [isRecording, setIsRecording] = useState(false);
   const [timer, setTimer] = useState("00:00");
@@ -76,6 +78,10 @@ export default function Dashboard() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [needsKey, setNeedsKey] = useState(false);
+  const [openaiKey, setOpenaiKey] = useState("");
+  const [keyDraft, setKeyDraft] = useState("");
+  const [keyError, setKeyError] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -115,6 +121,37 @@ export default function Dashboard() {
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
+
+  // When the deployment has no OpenAI key of its own, each person uses theirs.
+  // It is kept in this browser only and sent with each notes request.
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.needsOpenAIKey) return;
+        setNeedsKey(true);
+        setOpenaiKey(window.localStorage.getItem(OPENAI_KEY_STORAGE) || "");
+      })
+      .catch(() => { /* leave the prompt off; the server still asks for a key */ });
+  }, []);
+
+  const saveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    const value = keyDraft.trim();
+    if (!value.startsWith("sk-")) {
+      setKeyError("That does not look like an OpenAI key. It starts with sk-.");
+      return;
+    }
+    window.localStorage.setItem(OPENAI_KEY_STORAGE, value);
+    setOpenaiKey(value);
+    setKeyDraft("");
+    setKeyError("");
+  };
+
+  const removeKey = () => {
+    window.localStorage.removeItem(OPENAI_KEY_STORAGE);
+    setOpenaiKey("");
+  };
 
   const updateTimer = useCallback(() => {
     if (!startTimeRef.current) return;
@@ -184,12 +221,16 @@ export default function Dashboard() {
   };
 
   const processRecording = async (pathname: string, recTitle: string) => {
+    if (needsKey && !openaiKey) {
+      setStatus({ text: "Add your OpenAI key above to generate notes.", type: "error" });
+      return;
+    }
     setProcessingId(pathname);
     setStatus({ text: `Processing "${recTitle}"...`, type: "processing" });
     try {
       const res = await fetch("/api/process", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(needsKey ? { "x-openai-key": openaiKey } : {}) },
         body: JSON.stringify({ pathname, title: recTitle, mode }),
       });
       const data = await res.json();
@@ -236,6 +277,45 @@ export default function Dashboard() {
             Sign Out
           </button>
         </div>
+
+        {needsKey && (
+          <div className="card compact">
+            <div className="section-header">
+              <h2 className="section-title">Your OpenAI key</h2>
+            </div>
+            {openaiKey ? (
+              <div className="list-item">
+                <div className="list-item-info">
+                  <div className="key-saved">Key saved in this browser</div>
+                  <div className="list-item-meta">Muesli uses it to write your notes. It is never stored on the server.</div>
+                </div>
+                <button onClick={removeKey} className="btn-sm neutral">Remove key</button>
+              </div>
+            ) : (
+              <form onSubmit={saveKey}>
+                <p className="key-help">
+                  Muesli writes your notes with your own OpenAI key. It stays in this browser and is sent only when you generate notes.
+                  Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer">platform.openai.com/api-keys</a>.
+                </p>
+                <label htmlFor="openai-key" className="sr-only">OpenAI API key</label>
+                <div className="key-row">
+                  <input
+                    id="openai-key"
+                    type="password"
+                    autoComplete="off"
+                    value={keyDraft}
+                    onChange={(e) => setKeyDraft(e.target.value)}
+                    placeholder="sk-..."
+                    className="title-input"
+                    required
+                  />
+                  <button type="submit" className="btn-sm accent">Save key</button>
+                </div>
+                {keyError && <div className="status error" role="alert">{keyError}</div>}
+              </form>
+            )}
+          </div>
+        )}
 
         {/* Recording Card */}
         <div className="card">

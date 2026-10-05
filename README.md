@@ -20,6 +20,7 @@ The film file is in this repository at `public/muesli-film.mp4`, and its source 
 ## What you need
 
 - An OpenAI API key, from [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+  You can paste it into the app after you sign in, or set it once on the server.
 - A free Vercel account, from [vercel.com](https://vercel.com).
 
 That is all.
@@ -30,8 +31,8 @@ That is all.
 2. In Vercel, go to [vercel.com/new](https://vercel.com/new) and import your copy.
 3. In your Vercel project, open the **Storage** tab, choose **Create**, then **Blob**, choose **Private** access, and connect it to the project.
    This sets `BLOB_READ_WRITE_TOKEN` for you.
-4. In **Settings**, then **Environment Variables**, add these four:
-   - `OPENAI_API_KEY`: your OpenAI key.
+4. In **Settings**, then **Environment Variables**, add these:
+   - `OPENAI_API_KEY`: your OpenAI key. This one is optional. If you leave it out, the app asks each person for their own key and keeps it in their browser.
    - `AUTH_SECRET`: a long random string. Run `npx auth secret` to make one.
    - `AUTH_EMAIL`: the email you will sign in with.
    - `AUTH_PASSWORD`: the password you will sign in with.
@@ -84,6 +85,7 @@ When the Google variables are not set, the app shows only the email and password
 - Recordings and notes are stored in your own Vercel Blob store with private access.
   Only someone signed in to your copy of the app can download them.
 - Each copy of the app has one login: the email and password you set.
+- With no `OPENAI_API_KEY` on the server, a key you paste into the app is kept in your browser, sent only when you generate notes, and never stored on the server.
 - The notes model is set in `lib/ai.ts`. To use a different OpenAI model, set `OPENAI_NOTES_MODEL`.
 
 ## Cost

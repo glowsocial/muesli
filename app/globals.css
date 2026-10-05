@@ -898,3 +898,11 @@ body {
     height: 14px;
   }
 }
+
+/* OpenAI key prompt */
+.key-help { font-size: 14px; line-height: 1.6; color: var(--text-secondary); margin: 12px 0 16px; }
+.key-help a { color: var(--accent); text-decoration: underline; }
+.key-row { display: flex; align-items: flex-start; }
+.key-row .title-input { margin-bottom: 0; }
+.key-row .btn-sm { min-height: 50px; }
+.key-saved { font-size: 14px; font-weight: 600; color: var(--text); }
