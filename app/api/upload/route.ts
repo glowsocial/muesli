@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { ALLOWED_UPLOAD_TYPES } from '@/lib/audio';
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -20,16 +21,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const finalPathname = `recordings/${session.user.email}/${cleanName}`;
 
         return {
-          allowedContentTypes: [
-            'audio/webm', 
-            'audio/webm;codecs=opus', 
-            'audio/webm; codecs=opus', 
-            'video/webm', 
-            'audio/wav', 
-            'audio/mp4', 
-            'audio/ogg', 
-            'audio/mpeg'
-          ],
+          allowedContentTypes: ALLOWED_UPLOAD_TYPES,
           tokenPayload: JSON.stringify({ userId: session.user.id }),
         };
       },

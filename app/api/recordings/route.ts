@@ -1,6 +1,7 @@
 import { list } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { audioExtension } from "@/lib/audio";
 
 export const runtime = "nodejs";
 
@@ -14,12 +15,12 @@ export async function GET() {
     const { blobs } = await list({ prefix: `recordings/${session.user.email}/` });
 
     const recordings = blobs
-      .filter((b) => b.pathname.endsWith(".webm") || b.pathname.endsWith(".wav"))
+      .filter((b) => audioExtension(b.pathname) !== null)
       .map((b) => {
         const filename = b.pathname.split("/").pop() || "";
         const title = filename
           .replace(/^\d{4}.*?_/, "")
-          .replace(/\.(webm|wav)$/, "")
+          .replace(/\.[a-z0-9]+$/i, "")
           .replace(/-/g, " ");
 
         return {

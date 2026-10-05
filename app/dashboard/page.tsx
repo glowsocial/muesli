@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { upload } from '@vercel/blob/client';
+import { AUDIO_EXTENSIONS, audioExtension, audioFileInfo, tooLargeMessage } from "@/lib/audio";
+import type { NoteMode } from "@/lib/prompts";
 
 type Recording = {
   url: string;
@@ -52,14 +54,28 @@ const DownloadIcon = () => (
   </svg>
 );
 
-type Mode = "meeting" | "voice-memo" | "brain-dump" | "content-draft";
+type Mode = NoteMode;
 
 const MODES: { value: Mode; label: string; placeholder: string }[] = [
   { value: "meeting", label: "Meeting Notes", placeholder: "e.g. UX Review with Dan" },
   { value: "voice-memo", label: "Voice Memo", placeholder: "e.g. Quick thought on pricing" },
   { value: "brain-dump", label: "Brain Dump", placeholder: "e.g. Product roadmap ideas" },
   { value: "content-draft", label: "Content Draft", placeholder: "e.g. LinkedIn post about AI" },
+  { value: "webinar", label: "Webinar", placeholder: "e.g. Launch webinar with Alex" },
+  { value: "tool-ideas", label: "Tool Ideas", placeholder: "e.g. Tool ideas from the SaaS webinar" },
+  { value: "topic-expansion", label: "Expand Topic", placeholder: "e.g. Expand: cold email for freelancers" },
 ];
+
+// Where the sound comes from. A browser tab is how you record a webinar.
+type AudioSource = "mic" | "tab" | "tab-mic";
+
+const SOURCES: { value: AudioSource; label: string }[] = [
+  { value: "mic", label: "Microphone" },
+  { value: "tab", label: "Browser tab" },
+  { value: "tab-mic", label: "Tab + mic" },
+];
+
+const NO_TAB_AUDIO = "no-tab-audio";
 
 const OPENAI_KEY_STORAGE = "muesli-openai-key";
 
@@ -82,10 +98,14 @@ export default function Dashboard() {
   const [openaiKey, setOpenaiKey] = useState("");
   const [keyDraft, setKeyDraft] = useState("");
   const [keyError, setKeyError] = useState("");
+  const [source, setSource] = useState<AudioSource>("mic");
+  const [uploading, setUploading] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const audioStreamRef = useRef<MediaStream | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const finishRef = useRef<() => Promise<void>>(async () => {});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
@@ -161,63 +181,166 @@ export default function Dashboard() {
     setTimer(`${mins}:${secs}`);
   }, []);
 
-  const startRecording = async () => {
-    setStatus({ text: "Requesting mic access...", type: "" });
+  // Stops the recorder. Saving happens in finishRecording once it has stopped.
+  const stopRecording = () => {
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
+  };
+
+  // Runs once the recorder has stopped, whether Stop was pressed or the tab share ended.
+  const finishRecording = async () => {
+    cleanupRef.current?.();
+    cleanupRef.current = null;
+    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    setStatus({ text: "Uploading securely...", type: "processing" });
+    const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const safeName = (title || "recording").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50);
+    const filename = `${timestamp}_${safeName}.webm`;
+
+    const folder = userEmail ? `recordings/${userEmail}` : `recordings/anonymous`;
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      await upload(`${folder}/${filename}`, blob, {
+        access: 'private',
+        handleUploadUrl: '/api/upload',
+        clientPayload: JSON.stringify({ email: userEmail })
       });
-      audioStreamRef.current = stream;
+
+      // The recording is saved either way. A file over the transcription limit cannot be turned into notes.
+      const sizeProblem = tooLargeMessage(blob.size);
+      setStatus(
+        sizeProblem
+          ? { text: `Recording saved. ${sizeProblem}`, type: "error" }
+          : { text: "Recording saved securely!", type: "success" }
+      );
+      setTitle("");
+      loadData();
+    } catch (error) {
+      setStatus({ text: "Upload failed: " + (error as Error).message, type: "error" });
+    }
+    setIsRecording(false);
+    setTimer("00:00");
+    startTimeRef.current = null;
+  };
+
+  // The recorder's stop handler is set once, so it calls the latest finishRecording through a ref.
+  useEffect(() => {
+    finishRef.current = finishRecording;
+  });
+
+  // Starts recording from the microphone, a browser tab (a webinar), or both mixed.
+  const startRecording = async () => {
+    const wantsTab = source !== "mic";
+    if (wantsTab && !navigator.mediaDevices?.getDisplayMedia) {
+      setStatus({ text: "Recording a browser tab needs Chrome or Edge on a computer.", type: "error" });
+      return;
+    }
+    setStatus({
+      text: wantsTab ? "Choose the webinar tab and tick “Share tab audio”..." : "Requesting mic access...",
+      type: "",
+    });
+    // Made now, while the click still counts, so the browser lets it run.
+    const audioContext = wantsTab ? new AudioContext() : null;
+    const opened: MediaStream[] = [];
+    const release = () => {
+      opened.forEach((s) => s.getTracks().forEach((t) => t.stop()));
+      audioContext?.close().catch(() => { /* already closed */ });
+    };
+    try {
+      let recordStream: MediaStream;
+      if (!audioContext) {
+        const mic = await navigator.mediaDevices.getUserMedia({
+          audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+        });
+        opened.push(mic);
+        recordStream = mic;
+      } else {
+        // Chrome offers tab audio only together with video, so ask for both and record the audio.
+        const display = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        opened.push(display);
+        const tabAudio = display.getAudioTracks();
+        if (tabAudio.length === 0) throw new Error(NO_TAB_AUDIO);
+        await audioContext.resume();
+        // Everything goes through one mono output, which keeps the file small.
+        const mixed = audioContext.createMediaStreamDestination();
+        mixed.channelCount = 1;
+        audioContext.createMediaStreamSource(new MediaStream(tabAudio)).connect(mixed);
+        if (source === "tab-mic") {
+          const mic = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true },
+          });
+          opened.push(mic);
+          audioContext.createMediaStreamSource(mic).connect(mixed);
+        }
+        recordStream = mixed.stream;
+        // The browser's "Stop sharing" button ends the shared audio. Stop and save what was recorded.
+        tabAudio[0].addEventListener("ended", () => stopRecording());
+      }
+
       audioChunksRef.current = [];
-      const recorder = new MediaRecorder(stream, { mimeType: "audio/webm;codecs=opus" });
+      // 32 kbps mono is plenty for speech and keeps about 100 minutes under the transcription limit.
+      const recorder = new MediaRecorder(recordStream, {
+        mimeType: "audio/webm;codecs=opus",
+        audioBitsPerSecond: 32000,
+      });
       recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.onstop = () => { void finishRef.current(); };
+      cleanupRef.current = release;
       mediaRecorderRef.current = recorder;
       recorder.start(1000);
       setIsRecording(true);
       setStatus({ text: "", type: "recording" });
       startTimeRef.current = Date.now();
       timerIntervalRef.current = setInterval(updateTimer, 1000);
-    } catch {
-      setStatus({ text: "Mic access denied — check browser permissions", type: "error" });
+    } catch (error) {
+      release();
+      if (error instanceof Error && error.message === NO_TAB_AUDIO) {
+        setStatus({ text: "No audio was shared. Pick a browser tab and tick “Share tab audio”.", type: "error" });
+      } else if (wantsTab) {
+        setStatus({ text: "Tab recording was cancelled or blocked — check browser permissions", type: "error" });
+      } else {
+        setStatus({ text: "Mic access denied — check browser permissions", type: "error" });
+      }
     }
   };
 
-  const stopRecording = async () => {
-    const recorder = mediaRecorderRef.current;
-    if (!recorder) return;
-    if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
-    return new Promise<void>((resolve) => {
-      recorder.onstop = async () => {
-        audioStreamRef.current?.getTracks().forEach((t) => t.stop());
-        setStatus({ text: "Uploading securely (no size limit!)...", type: "processing" });
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+  // Uploads a recording that already exists, such as a webinar replay saved as mp3 or mp4.
+  const uploadFile = async (file: File) => {
+    const extension = audioExtension(file.name);
+    if (!extension) {
+      setStatus({ text: `That file type is not supported. Use ${AUDIO_EXTENSIONS.join(", ")}.`, type: "error" });
+      return;
+    }
+    const sizeProblem = tooLargeMessage(file.size);
+    if (sizeProblem) {
+      setStatus({ text: sizeProblem, type: "error" });
+      return;
+    }
+    setUploading(true);
+    setStatus({ text: `Uploading "${file.name}"...`, type: "processing" });
 
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-        const safeName = (title || "recording").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50);
-        const filename = `${timestamp}_${safeName}.webm`;
-        
-        const folder = userEmail ? `recordings/${userEmail}` : `recordings/anonymous`;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+    const stem = file.name.replace(/\.[^.]+$/, "");
+    const safeName = (title || stem || "recording").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 50);
+    const folder = userEmail ? `recordings/${userEmail}` : `recordings/anonymous`;
 
-        try {
-          const newBlob = await upload(`${folder}/${filename}`, blob, {
-            access: 'private',
-            handleUploadUrl: '/api/upload',
-            clientPayload: JSON.stringify({ email: userEmail })
-          });
-
-          setStatus({ text: "Recording saved securely!", type: "success" });
-          setTitle("");
-          loadData();
-        } catch (error) {
-          setStatus({ text: "Upload failed: " + (error as Error).message, type: "error" });
-        }
-        setIsRecording(false);
-        setTimer("00:00");
-        startTimeRef.current = null;
-        resolve();
-      };
-      recorder.stop();
-    });
+    try {
+      await upload(`${folder}/${timestamp}_${safeName}.${extension}`, file, {
+        access: 'private',
+        handleUploadUrl: '/api/upload',
+        clientPayload: JSON.stringify({ email: userEmail }),
+        // Browsers report odd types for some files, so send the one that matches the extension.
+        contentType: audioFileInfo(`x.${extension}`).type,
+      });
+      setStatus({ text: "File uploaded. Press Generate Notes below.", type: "success" });
+      setTitle("");
+      loadData();
+    } catch (error) {
+      setStatus({ text: "Upload failed: " + (error as Error).message, type: "error" });
+    }
+    setUploading(false);
   };
 
   const processRecording = async (pathname: string, recTitle: string) => {
@@ -333,6 +456,25 @@ export default function Dashboard() {
             ))}
           </div>
 
+          <div className="mode-selector" role="group" aria-label="Audio source">
+            {SOURCES.map((s) => (
+              <button
+                key={s.value}
+                onClick={() => setSource(s.value)}
+                disabled={isRecording}
+                aria-pressed={source === s.value}
+                className={`mode-btn ${source === s.value ? "active" : ""}`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {source !== "mic" && !isRecording && (
+            <p className="key-help">
+              Open the webinar in its own browser tab first. When Chrome or Edge asks, choose that tab and tick “Share tab audio”.
+            </p>
+          )}
+
           {calendarEvents.length > 0 && (
             <div className="calendar-events-wrap" role="group" aria-label="Calendar events" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 20, paddingBottom: 8 }}>
               {calendarEvents.map(event => {
@@ -409,6 +551,28 @@ export default function Dashboard() {
           >
             {isRecording ? <><StopIcon /> Stop Recording</> : <><MicIcon /> Start Recording</>}
           </button>
+
+          <div style={{ textAlign: "center", marginTop: 12 }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              hidden
+              accept={`audio/*,video/mp4,video/webm,${AUDIO_EXTENSIONS.map((e) => `.${e}`).join(",")}`}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void uploadFile(file);
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isRecording || uploading}
+              className="btn-sm neutral"
+            >
+              {uploading ? <><span className="spinner" aria-hidden="true" /> Uploading...</> : "Or upload an audio or video file"}
+            </button>
+          </div>
 
           <div role="status" aria-live="polite">
             {status.text && (

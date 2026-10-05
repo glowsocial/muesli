@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { auth } from "@/auth";
 import { getNotesText, NOTES_MODEL, TRANSCRIPTION_MODEL } from "@/lib/ai";
+import { audioFileInfo, tooLargeMessage } from "@/lib/audio";
+import { buildPrompt } from "@/lib/prompts";
 
 export const runtime = "nodejs";
 export const maxDuration = 300; // 5 minutes for Pro plan
@@ -54,11 +56,18 @@ export async function POST(request: NextRequest) {
 
     const audioBuffer = await new Response(recording.stream).arrayBuffer();
 
+    // One transcription request takes a limited file size. Say so plainly
+    // instead of failing inside the OpenAI call.
+    const sizeProblem = tooLargeMessage(audioBuffer.byteLength);
+    if (sizeProblem) {
+      return NextResponse.json({ ok: false, error: sizeProblem }, { status: 413 });
+    }
+
     // Step 2: Transcribe with the current speech model
     console.log(`Transcribing with ${TRANSCRIPTION_MODEL}...`);
-    const audioFile = new File([audioBuffer], "recording.webm", {
-      type: "audio/webm",
-    });
+    // The endpoint reads the format from the file name, so keep the real extension.
+    const { name: audioName, type: audioType } = audioFileInfo(pathname);
+    const audioFile = new File([audioBuffer], audioName, { type: audioType });
 
     const transcription = await openai.audio.transcriptions.create({
       model: TRANSCRIPTION_MODEL,
@@ -84,65 +93,7 @@ export async function POST(request: NextRequest) {
     console.log(`Generating notes (mode: ${mode})...`);
     const meetingDate = new Date().toISOString().split("T")[0];
 
-    const prompts: Record<string, string> = {
-      meeting: `You are a professional meeting notes assistant. Generate structured, actionable meeting notes from the following transcript.
-
-Meeting Title: ${title || "Untitled Meeting"}
-Date: ${meetingDate}
-
-Format the notes as Obsidian-compatible Markdown with this structure:
-- YAML frontmatter with tags, date, meeting title
-- Summary (2-3 sentences)
-- Key Decisions (bullet points)
-- Action Items (checkbox format with @assignees if identifiable)
-- Discussion Notes (organized by topic with h3 headers)
-
-Be concise but thorough. Extract every actionable item. Use professional language.`,
-
-      "voice-memo": `You are a personal voice note assistant. Clean up and structure the following voice memo transcript into clear, readable notes.
-
-Title: ${title || "Voice Memo"}
-Date: ${meetingDate}
-
-Format as Obsidian-compatible Markdown:
-- YAML frontmatter with tags, date, title
-- Clean summary of what was said (fix grammar, remove filler words, keep the speaker's voice)
-- Key points highlighted as bullet points
-- Any to-dos or follow-ups extracted as checkboxes
-
-Keep it natural and concise. This is a personal note, not a formal document.`,
-
-      "brain-dump": `You are a thinking partner who helps organize scattered thoughts. The following is a brain dump -- someone thinking out loud, probably jumping between topics.
-
-Title: ${title || "Brain Dump"}
-Date: ${meetingDate}
-
-Format as Obsidian-compatible Markdown:
-- YAML frontmatter with tags, date, title
-- Organize the thoughts into logical clusters/themes (use h3 headers for each theme)
-- Under each theme, list the key ideas as bullet points
-- Add a "Connections" section at the end noting any interesting links between themes
-- Extract any action items or decisions as checkboxes
-
-Preserve the original ideas faithfully. Add structure, not opinions.`,
-
-      "content-draft": `You are a content writer who turns spoken ideas into polished drafts. The following transcript is someone talking through a content idea.
-
-Title: ${title || "Content Draft"}
-Date: ${meetingDate}
-
-Format as Obsidian-compatible Markdown:
-- YAML frontmatter with tags, date, title, status: draft
-- Turn the spoken content into a well-structured written piece (blog post, LinkedIn post, or newsletter -- match the speaker's apparent intent)
-- Use clear headers, short paragraphs, and a conversational but professional tone
-- Add a "Hook" at the top (a compelling opening line)
-- End with a call-to-action or closing thought
-- Include a "Raw Notes" section at the bottom with key quotes from the transcript
-
-Make it publication-ready while preserving the speaker's authentic voice.`,
-    };
-
-    const systemPrompt = prompts[mode] || prompts.meeting;
+    const systemPrompt = buildPrompt(mode, title, meetingDate);
 
     // The notes model reasons before it writes, and reasoning spends output
     // tokens. 16384 leaves well over 4096 for the notes at low effort.
