@@ -1,0 +1,17 @@
+{
+  "name": "muesli-film",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx --public-dir=public",
+    "audio": "node scripts/cues.mjs && uv run --with numpy python scripts/sound.py",
+    "render": "remotion render src/index.jsx MuesliFilm out/render.mp4 --public-dir=public --codec=h264 --crf=16 --pixel-format=yuv420p --color-space=bt709 --audio-codec=aac --audio-bitrate=256k --overwrite && ffmpeg -v error -y -i out/render.mp4 -c copy -movflags +faststart out/muesli-film.mp4 && rm out/render.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.528",
+    "@remotion/google-fonts": "4.0.528",
+    "remotion": "4.0.528",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  }
+}

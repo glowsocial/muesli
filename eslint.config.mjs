@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The promo film is its own Remotion project (film/package.json), not part of the app.
+    "film/**",
   ]),
 ]);
 
