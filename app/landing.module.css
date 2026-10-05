@@ -110,3 +110,4 @@
 .filmFrame { margin-top: 48px; background: var(--wash); border-radius: 16px; padding: 20px; }
 .filmFrame video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: var(--cream); border: 1px solid var(--line-soft); border-radius: 12px; box-shadow: 0 16px 40px -16px rgba(28, 43, 54, .2); }
 @media (max-width: 800px) { .film { padding: 64px 6% 0; } .filmFrame { margin-top: 32px; padding: 12px; } }
+.footerLink { font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; min-height: 44px; }

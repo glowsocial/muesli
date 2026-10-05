@@ -9,6 +9,8 @@ const steps = [
   { icon: Notes, title: "Leave with clarity.", text: "Stop recording and generate your notes. The summary, the decisions, and the next steps, ready to take with you." },
 ];
 
+const REPO_URL = "https://github.com/glowsocial/muesli";
+
 export default function LandingPage() {
   return (
     <div className={s.page}>
@@ -16,15 +18,15 @@ export default function LandingPage() {
       <header className={s.header}>
         <Link href="/" className={s.brand} aria-label="Muesli home">muesli<span>.</span></Link>
         <nav aria-label="Main navigation" className={s.nav}><a href="#how-it-works">How it works</a><a href="#preview">See a sample</a></nav>
-        <Link href="/dashboard" className={s.navCta}>Open Muesli <ArrowUpRight /></Link>
+        <a href={REPO_URL} className={s.navCta}>Get it on GitHub <ArrowUpRight /></a>
       </header>
       <main id="main">
         <section className={s.hero} aria-labelledby="hero-title">
           <div className={s.heroCopy}>
             <h1 id="hero-title">Less scribbling.<br />More <em>being here.</em></h1>
-            <p className={s.intro}>Muesli is AI meeting notes that run in your browser. Record on any device, stay in the conversation, and leave with the summary, the decisions, and the next steps.</p>
-            <div className={s.actions}><Link href="/dashboard" className={s.primary}>Start recording <ArrowUpRight size={18} /></Link><a href="#preview" className={s.textLink}>See a sample <ArrowDown /></a></div>
-            <p className={s.smallPrint}>No installs. Nothing to join. Works on your phone, laptop, or tablet.</p>
+            <p className={s.intro}>Muesli is open source AI meeting notes that run in your browser. Record on any device, stay in the conversation, and leave with the summary, the decisions, and the next steps.</p>
+            <div className={s.actions}><a href={REPO_URL} className={s.primary}>Get it on GitHub <ArrowUpRight size={18} /></a><a href="#preview" className={s.textLink}>See a sample <ArrowDown /></a></div>
+            <p className={s.smallPrint}>Free and open source. Run your own copy with your own OpenAI key.</p>
           </div>
           <div className={s.heroVisual} aria-hidden="true">
             <div className={s.stage}>
@@ -51,14 +53,16 @@ export default function LandingPage() {
         <section id="how-it-works" className={s.how} aria-labelledby="how-title"><div className={s.sectionHeading}><h2 id="how-title">Be present.<br /><em>We’ll handle the notes.</em></h2><p>Three small steps. One less thing on your mind.</p></div><div className={s.steps}>{steps.map(({icon: Icon, title, text})=><article className={s.step} key={title}><span className={s.stepIcon}><Icon size={20} /></span><h3>{title}</h3><p>{text}</p></article>)}</div></section>
         <section className={s.manifesto}><h2>You brought the ideas.<br />You shouldn’t have to bring<br /><em>the perfect memory.</em></h2><Mark size={320} className={s.manifestoMark} /><p>For the details you almost missed.<br />And the ideas you almost forgot.</p></section>
         <section className={s.faq} aria-labelledby="faq-title"><div><h2 id="faq-title">A few good<br /><em>questions.</em></h2></div><div className={s.questions}>
-          <details><summary>Do I need to install anything?</summary><p>No. Muesli records microphone audio in your browser. Allow microphone access when you start recording.</p></details>
+          <details><summary>Is it really free?</summary><p>Yes. Muesli is open source under the MIT license. You run your own copy with your own OpenAI key, and you pay OpenAI only for what you use.</p></details>
+          <details><summary>How do I set it up?</summary><p>Copy the repository from GitHub, deploy it to a free Vercel account, add storage, and set your OpenAI key. The README walks you through each step.</p></details>
+          <details><summary>Do I need to install anything on my phone or laptop?</summary><p>No. Muesli records microphone audio in your browser. Allow microphone access when you start recording.</p></details>
           <details><summary>Can I use it away from my desk?</summary><p>Yes. Open Muesli in a supported browser on your phone or tablet for in-person conversations and voice memos. Ask everyone for permission before you record.</p></details>
-          <details><summary>What happens to my recording?</summary><p>Your audio is uploaded to cloud storage. AI services process it to create a transcript and notes. Use care with private information.</p></details>
+          <details><summary>What happens to my recording?</summary><p>Your audio is uploaded to your own private storage. OpenAI processes it to create a transcript and notes. Use care with private information.</p></details>
           <details><summary>Can I take my notes with me?</summary><p>Yes. Download your notes as Markdown files for Obsidian, your project folder, or another writing app.</p></details>
         </div></section>
-        <section className={s.closing}><h2>Good conversations.<br /><em>Great notes.</em></h2><Link href="/dashboard" className={s.primary}>Open Muesli <ArrowUpRight size={18} /></Link><p className={s.smallPrint}>Your next good idea is waiting.</p></section>
+        <section className={s.closing}><h2>Good conversations.<br /><em>Great notes.</em></h2><a href={REPO_URL} className={s.primary}>Get it on GitHub <ArrowUpRight size={18} /></a><p className={s.smallPrint}>Your next good idea is waiting.</p></section>
       </main>
-      <footer className={s.footer}><Link href="/" className={s.brand}>muesli<span>.</span></Link><p>A fresh start for your thoughts.</p><a href="#main">Back to the top <ArrowUp size={14} /></a></footer>
+      <footer className={s.footer}><Link href="/" className={s.brand}>muesli<span>.</span></Link><p>A fresh start for your thoughts.</p><Link href="/login" className={s.footerLink}>Sign in</Link><a href="#main">Back to the top <ArrowUp size={14} /></a></footer>
     </div>
   );
 }

@@ -3,6 +3,11 @@
 Muesli records meetings in your browser and turns them into clean, structured notes.
 You run your own copy, with your own OpenAI key, so your recordings stay in your own storage.
 
+[![Watch the 50-second film](public/muesli-film-poster.jpg)](https://www.mueslirecorder.com/#film)
+
+Watch the 50-second film at [mueslirecorder.com](https://www.mueslirecorder.com/#film).
+The film file is in this repository at `public/muesli-film.mp4`, and its source is in `film/`.
+
 ## How it works
 
 1. Open the app on any device and sign in.
