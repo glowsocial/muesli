@@ -1,4 +1,4 @@
-import { put } from "@vercel/blob";
+import { get, put } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 import { auth } from "@/auth";
@@ -37,19 +37,19 @@ export async function POST(request: NextRequest) {
     // Step 1: Download audio from Vercel Blob
     console.log(`Downloading: ${pathname}`);
 
-    const { list } = await import("@vercel/blob");
-    const { blobs } = await list({ prefix: pathname });
-    const blob = blobs.find((b) => b.pathname === pathname);
+    // Recordings are private and each user reads only their own folder.
+    const recording = pathname.startsWith(`recordings/${session.user.email}/`)
+      ? await get(pathname, { access: "private" })
+      : null;
 
-    if (!blob) {
+    if (!recording || recording.statusCode !== 200) {
       return NextResponse.json(
         { ok: false, error: "Recording not found" },
         { status: 404 }
       );
     }
 
-    const audioResponse = await fetch(blob.url);
-    const audioBuffer = await audioResponse.arrayBuffer();
+    const audioBuffer = await new Response(recording.stream).arrayBuffer();
 
     // Step 2: Transcribe with the current speech model
     console.log(`Transcribing with ${TRANSCRIPTION_MODEL}...`);
@@ -164,8 +164,8 @@ Make it publication-ready while preserving the speaker's authentic voice.`,
       .slice(0, 50);
     const notesFilename = `${timestamp}_${safeName}.md`;
 
-    const notesBlob = await put(`notes/${session.user.email}/${notesFilename}`, notesContent, {
-      access: "public",
+    await put(`notes/${session.user.email}/${notesFilename}`, notesContent, {
+      access: "private",
       addRandomSuffix: false,
       contentType: "text/markdown",
     });
@@ -175,7 +175,6 @@ Make it publication-ready while preserving the speaker's authentic voice.`,
     return NextResponse.json({
       ok: true,
       notesFile: notesFilename,
-      notesUrl: notesBlob.url,
       notesText: notesContent,
     });
   } catch (error) {

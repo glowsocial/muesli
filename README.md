@@ -23,7 +23,7 @@ That is all.
 
 1. Copy this repository to your own GitHub account (fork it, or clone it and push it).
 2. In Vercel, go to [vercel.com/new](https://vercel.com/new) and import your copy.
-3. In your Vercel project, open the **Storage** tab, choose **Create**, then **Blob**, and connect it to the project.
+3. In your Vercel project, open the **Storage** tab, choose **Create**, then **Blob**, choose **Private** access, and connect it to the project.
    This sets `BLOB_READ_WRITE_TOKEN` for you.
 4. In **Settings**, then **Environment Variables**, add these four:
    - `OPENAI_API_KEY`: your OpenAI key.
@@ -76,8 +76,8 @@ When the Google variables are not set, the app shows only the email and password
 
 ## Good to know
 
-- Recordings and notes are stored in your own Vercel Blob store with public, unlisted links.
-  Anyone who has a file's link can open it, so share links with care.
+- Recordings and notes are stored in your own Vercel Blob store with private access.
+  Only someone signed in to your copy of the app can download them.
 - Each copy of the app has one login: the email and password you set.
 - The notes model is set in `lib/ai.ts`. To use a different OpenAI model, set `OPENAI_NOTES_MODEL`.
 

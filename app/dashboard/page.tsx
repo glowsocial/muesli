@@ -163,7 +163,7 @@ export default function Dashboard() {
 
         try {
           const newBlob = await upload(`${folder}/${filename}`, blob, {
-            access: 'public',
+            access: 'private',
             handleUploadUrl: '/api/upload',
             clientPayload: JSON.stringify({ email: userEmail })
           });
@@ -408,7 +408,7 @@ export default function Dashboard() {
                     <div className="list-item-name">{n.title}</div>
                     <div className="list-item-meta">{formatDate(n.uploadedAt)}</div>
                   </div>
-                  <a href={n.url} download className="btn-sm neutral">
+                  <a href={`/api/notes/download?pathname=${encodeURIComponent(n.pathname)}`} download className="btn-sm neutral">
                     <DownloadIcon /> Download
                   </a>
                 </div>
