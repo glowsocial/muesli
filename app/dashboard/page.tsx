@@ -162,6 +162,12 @@ export default function Dashboard() {
   }, []);
 
   const startRecording = async () => {
+    // The upload goes into your own folder, which needs your email. It arrives with the
+    // first load of your recordings, so wait for it instead of failing at the end.
+    if (!userEmail) {
+      setStatus({ text: "Still loading your account. Try again in a moment.", type: "error" });
+      return;
+    }
     setStatus({ text: "Requesting mic access...", type: "" });
     try {
       const stream = await navigator.mediaDevices.getUserMedia({

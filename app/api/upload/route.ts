@@ -1,6 +1,7 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
+import { isOwnUploadPath } from '@/lib/upload-path';
 
 export async function POST(request: Request): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
@@ -15,9 +16,10 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error('Unauthorized');
         }
 
-        // Securely map the file directly into the logged-in user's folder!
-        const cleanName = pathname.replace(/^recordings\//, "");
-        const finalPathname = `recordings/${session.user.email}/${cleanName}`;
+        // The browser chooses the path, so only accept the signed-in person's own folder.
+        if (!isOwnUploadPath(pathname, session.user.email)) {
+          throw new Error('That upload path is not in your own recordings folder');
+        }
 
         return {
           allowedContentTypes: [
