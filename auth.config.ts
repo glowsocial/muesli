@@ -7,9 +7,6 @@ import { isGoogleEnabled } from "./lib/config";
 // edge-safe for middleware.ts.
 declare module "next-auth" {
   interface Session {
-    accessToken?: string;
-    refreshToken?: string;
-    provider?: string;
     user: {
       id: string;
     } & DefaultSession["user"]
@@ -61,27 +58,25 @@ export const authConfig = {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.email = user.email;
         token.sub = user.id;
       }
-      if (account) {
-        token.accessToken = account.access_token;
-        token.refreshToken = account.refresh_token;
-        token.provider = account.provider;
-      }
+      // Google credentials belong to the server-side Account record. Remove
+      // copies from cookies created before this change as each session is read.
+      delete token.accessToken;
+      delete token.refreshToken;
+      delete token.provider;
       return token;
     },
     async session({ session, token }) {
-      session.accessToken = token.accessToken as string;
-      session.refreshToken = token.refreshToken as string;
-      session.provider = token.provider as string;
-      if (session.user) {
-        if (token.sub) session.user.id = token.sub;
-        if (token.email) session.user.email = token.email as string;
+      const publicSession = { expires: session.expires, user: session.user };
+      if (publicSession.user) {
+        if (token.sub) publicSession.user.id = token.sub;
+        if (token.email) publicSession.user.email = token.email as string;
       }
-      return session;
+      return publicSession;
     }
   },
   pages: {
